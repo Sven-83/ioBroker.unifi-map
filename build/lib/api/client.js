@@ -62,6 +62,8 @@ function parseDevice(entry) {
 }
 function parseClassicUplink(entry) {
   const uplink = record(record(entry).uplink);
+  const last = record(record(entry).last_uplink);
+  const parentMac = (text(uplink.uplink_mac) || text(last.uplink_mac)).toLowerCase();
   const type = uplink.type === "wire" ? "wired" : uplink.type === "wireless" ? "wireless" : void 0;
   if (type === "wireless") {
     const rate = num(uplink.tx_rate);
@@ -69,10 +71,17 @@ function parseClassicUplink(entry) {
       type,
       speedMbps: rate === void 0 ? void 0 : Math.round(rate / 1e3),
       maxSpeedMbps: void 0,
-      signalDbm: num(uplink.signal)
+      signalDbm: num(uplink.signal),
+      parentMac
     };
   }
-  return { type, speedMbps: num(uplink.speed), maxSpeedMbps: num(uplink.max_speed), signalDbm: void 0 };
+  return {
+    type,
+    speedMbps: num(uplink.speed),
+    maxSpeedMbps: num(uplink.max_speed),
+    signalDbm: void 0,
+    parentMac
+  };
 }
 class UnifiClient {
   /**

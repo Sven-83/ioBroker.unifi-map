@@ -163,6 +163,50 @@ tests.integration(path.join(__dirname, '..'), {
                 expect(['online', 'restart']).to.include(event.event);
             });
 
+            it('writes the topology with cable and mesh links', async () => {
+                const topology = JSON.parse(await stateVal(harness, 'topology.json'));
+                expect(topology.rootId).to.equal(fake.id(1));
+                expect(topology.nodes).to.have.length(5);
+                expect(topology.edges.find(e => e.to === fake.id(4))).to.include({ from: fake.id(1), type: 'wireless' });
+                expect(topology.edges.find(e => e.to === fake.id(5))).to.include({ from: fake.id(4), type: 'wired', degraded: true });
+            });
+
+            it('reports only the cause when a switch and the device behind it fail', async function () {
+                this.timeout(30_000);
+                fake.config.devices[1].state = 'OFFLINE';
+                fake.config.devices[2].state = 'OFFLINE';
+                await new Promise(resolve => setTimeout(resolve, 10_500));
+                await harness.states.setState(`${NS}.refresh`, { val: true, ack: false });
+                await waitFor(async () => (await stateVal(harness, `${dev(2)}.online`)) === false, 'switch offline');
+                expect(await stateVal(harness, `${dev(3)}.consequence`)).to.equal(true);
+                expect(await stateVal(harness, `${dev(3)}.causeId`)).to.equal(fake.id(2));
+                expect(await stateVal(harness, `${dev(2)}.consequence`)).to.equal(false);
+                // the access point reports no uplink while offline: its last known one is kept
+                expect(await stateVal(harness, `${dev(3)}.uplinkId`)).to.equal(fake.id(2));
+                const event = JSON.parse(await stateVal(harness, 'events.last'));
+                expect(event).to.include({ event: 'offline', id: fake.id(2), affected: 1 });
+                const list = JSON.parse(await stateVal(harness, 'summary.json'));
+                expect(list.slice(0, 2).map(d => [d.id, d.state])).to.deep.equal([
+                    [fake.id(2), 'offline'],
+                    [fake.id(3), 'consequence'],
+                ]);
+            });
+
+            it('reports a mesh access point that found another way, not as a failure', async function () {
+                this.timeout(30_000);
+                fake.config.devices[1].state = 'ONLINE';
+                fake.config.devices[2].state = 'ONLINE';
+                fake.config.devices[3].parent = 3;
+                await new Promise(resolve => setTimeout(resolve, 10_500));
+                await harness.states.setState(`${NS}.refresh`, { val: true, ack: false });
+                await waitFor(async () => (await stateVal(harness, `${dev(4)}.uplinkId`)) === fake.id(3), 'new uplink');
+                const event = JSON.parse(await stateVal(harness, 'events.last'));
+                expect(event).to.include({ event: 'uplinkChanged', id: fake.id(4), from: fake.id(1), to: fake.id(3) });
+                expect(await stateVal(harness, `${dev(3)}.consequence`)).to.equal(false);
+                const topology = JSON.parse(await stateVal(harness, 'topology.json'));
+                expect(topology.nodes.find(n => n.id === fake.id(5)).depth).to.equal(4);
+            });
+
             it('fetches the certificate for the settings without sending the key', async function () {
                 this.timeout(15_000);
                 const before = fake.stats.requests;

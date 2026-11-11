@@ -21,8 +21,15 @@ const wired = (speed: number, max: number): ClassicUplink => ({
     speedMbps: speed,
     maxSpeedMbps: max,
     signalDbm: undefined,
+    parentMac: '',
 });
-const mesh: ClassicUplink = { type: 'wireless', speedMbps: 344, maxSpeedMbps: undefined, signalDbm: -62 };
+const mesh: ClassicUplink = {
+    type: 'wireless',
+    speedMbps: 344,
+    maxSpeedMbps: undefined,
+    signalDbm: -62,
+    parentMac: '',
+};
 const input = (overrides: Partial<DeviceInput> = {}): DeviceInput => ({
     device: device(),
     details: { uplinkDeviceId: 'parent' },

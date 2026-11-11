@@ -10,7 +10,7 @@ German documentation: [docs/de/README.md](docs/de/README.md)
 ioBroker adapter for UniFi networks: are all devices running, which uplink is slow, which device restarted.
 A topology map and firmware updates on request follow in later versions.
 
-> **Work in progress.** Version 0.1.0 reads the status (phase 2 of 6). Nothing is written to the console.
+> **Work in progress.** Version 0.1.0 reads status and topology (phases 2 and 3 of 6). Nothing is written to the console.
 
 ### Features
 - Status of every UniFi device (console, switches, access points): online, firmware, uptime, clients
@@ -18,7 +18,10 @@ A topology map and firmware updates on request follow in later versions.
 - Yellow when a cable uplink runs below its maximum (e.g. 100 of 1000 Mbit/s); endpoints at switch ports do not count
 - Restart detection, also for restarts while the adapter was stopped; restarts within 7 days
 - Summary for a tile: `ok`, `degraded`, `offline`, `stale` (data too old - never green from old values)
-- Last event (offline, online, restart, degraded, recovered) as JSON for scripts
+- Topology: who is connected to whom, cable or mesh, as JSON for the map
+- A failure is reported only for its cause: devices cut off behind a failed device are marked as a consequence.
+  Devices that find another way (a mesh access point moving to another parent) count as online and report `uplinkChanged`
+- Last event (offline, online, restart, uplinkChanged, degraded, recovered) as JSON for scripts
 
 ### Requirements
 - A UniFi console with UniFi OS and UniFi Network 9.3 or newer (tested with a UDR and Network 10.6.109)
@@ -54,7 +57,9 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | `devices.<id>.lastRestart` / `restartCount7d` | Time of the last start, restarts within 7 days |
 | `devices.<id>.uplinkId` / `uplinkType` / `linkSpeed` / `linkMaxSpeed` / `signal` | Uplink: parent device, `wired` or `wireless`, speed (mesh: transmit rate), signal of mesh links |
 | `devices.<id>.degraded` / `degradedReason` | Cable uplink below its maximum |
-| `events.last` | Last event as JSON: `time`, `event`, `id`, `name`, `model` |
+| `devices.<id>.consequence` / `causeId` | Unreachable only because the device `causeId` before it failed |
+| `topology.json` | `rootId`, `nodes` (state `ok`, `degraded`, `offline`, `consequence`, `busy`; parent; depth) and `edges` (cable/mesh, speed, signal) |
+| `events.last` | Last event as JSON: `time`, `event`, `id`, `name`, `model`; `offline` also has `affected` (devices cut off behind it), `uplinkChanged` has `from` and `to` |
 | `refresh` | Button: read everything now (at most every 10 s) |
 
 `<id>` is the ID of the UniFi API, not the name or MAC address. Updates and starts (`UPDATING`, `GETTING_READY`)
@@ -72,6 +77,9 @@ do not count as failures.
   classic device list (`/proxy/network/api/s/<site>/stat/device`), which is unofficial and may change with updates.
   If it fails, everything else keeps working and the uplink fields stay empty.
 - Mesh links have no maximum speed, so they are never shown yellow.
+- Uplinks are read with the details (default every 5 minutes, at once when a device changes its state): a mesh access
+  point that moves without changing its state is noticed with the next details.
+- Failed devices report no uplink; the last known one is kept (also across adapter restarts) to find the cause.
 - One site per console (the first one).
 
 ## Disclaimer
@@ -85,6 +93,7 @@ The icon is an own design. Use at your own risk.
 -->
 ### 0.1.0 (work in progress)
 - Status of the devices, uplinks (cable/mesh, speed), slow uplinks, restarts, summary and events
+- Topology with consequence failures and moving mesh access points
 - Pinned certificate of the console, read-only API key
 
 ## License

@@ -85,7 +85,9 @@ async function startFakeConsole(options = {}) {
                 return send(res, 200, { uptimeSec: d.uptimeSec, lastHeartbeatAt: new Date().toISOString(), cpuUtilizationPct: 3.5, memoryUtilizationPct: 40, uplink: {}, interfaces: {} });
             }
             const parent = config.devices.find(x => x.n === d.parent);
-            return send(res, 200, { id: d.id, name: d.name, model: d.model, state: d.state, ...(parent ? { uplink: { deviceId: parent.id } } : {}) });
+            // like a real console: a device that is not online reports no uplink
+            const reportsUplink = parent && d.state === 'ONLINE';
+            return send(res, 200, { id: d.id, name: d.name, model: d.model, state: d.state, ...(reportsUplink ? { uplink: { deviceId: parent.id } } : {}) });
         }
         if (p === `${base}/sites/${SITE_ID}/clients`) {
             const data = [];
@@ -96,7 +98,18 @@ async function startFakeConsole(options = {}) {
         }
         if (p === '/proxy/network/api/s/default/stat/device') {
             if (config.classicStatus !== 200) return send(res, config.classicStatus, { meta: { rc: 'error' } });
-            return send(res, 200, { meta: { rc: 'ok' }, data: config.devices.map(d => ({ mac: d.mac, model: d.model, uptime: d.uptimeSec, uplink: d.uplink })) });
+            return send(res, 200, { meta: { rc: 'ok' }, data: config.devices.map(d => {
+                const parent = config.devices.find(x => x.n === d.parent);
+                const online = d.state === 'ONLINE';
+                return {
+                    mac: d.mac,
+                    model: d.model,
+                    uptime: d.uptimeSec,
+                    // the console has no parent device; offline devices keep only their last uplink
+                    uplink: online ? { ...d.uplink, ...(parent ? { uplink_mac: parent.mac } : {}) } : {},
+                    ...(parent ? { last_uplink: { uplink_mac: parent.mac } } : {}),
+                };
+            }) });
         }
         send(res, 404, { statusCode: 404 });
     });

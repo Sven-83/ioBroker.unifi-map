@@ -51,14 +51,27 @@ describe('api/client', () => {
                 speedMbps: 100,
                 maxSpeedMbps: 1000,
                 signalDbm: undefined,
+                parentMac: '',
             });
-            expect(parseClassicUplink({ uplink: { type: 'wireless', tx_rate: 344100, signal: -62 } })).to.deep.equal({
+            expect(
+                parseClassicUplink({
+                    uplink: { type: 'wireless', tx_rate: 344100, signal: -62, uplink_mac: mac(1).toUpperCase() },
+                }),
+            ).to.deep.equal({
                 type: 'wireless',
                 speedMbps: 344,
                 maxSpeedMbps: undefined,
                 signalDbm: -62,
+                parentMac: mac(1),
             });
             expect(parseClassicUplink({}).type).to.equal(undefined);
+        });
+
+        it('takes the last known parent of a device that reports no uplink', () => {
+            expect(parseClassicUplink({ uplink: {}, last_uplink: { uplink_mac: mac(2) } }).parentMac).to.equal(mac(2));
+            expect(
+                parseClassicUplink({ uplink: { uplink_mac: mac(3) }, last_uplink: { uplink_mac: mac(2) } }).parentMac,
+            ).to.equal(mac(3));
         });
 
         it('reads Retry-After as seconds or date', () => {

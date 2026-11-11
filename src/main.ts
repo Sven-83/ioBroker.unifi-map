@@ -17,6 +17,13 @@ import {
 import { UnifiHttp } from './lib/api/http';
 import { RestartTracker } from './lib/model/restarts';
 import { deviceStatus, isStale, summarize, type DeviceStatus } from './lib/model/status';
+import {
+    buildTopology,
+    rememberUplinks,
+    uplinksFromStored,
+    type Topology,
+    type TopologyNode,
+} from './lib/model/topology';
 import { ObjectTree } from './lib/model/tree';
 import {
     DETAIL_DEFAULT_S,
@@ -80,6 +87,8 @@ class UnifiMap extends utils.Adapter {
     private uplinks = new Map<string, ClassicUplink>();
     private clients = new Map<string, number>();
     private previous = new Map<string, DeviceStatus>();
+    private previousNodes = new Map<string, TopologyNode>();
+    private lastUplinks = new Map<string, string>();
     private classicFailing = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
@@ -137,6 +146,8 @@ class UnifiMap extends utils.Adapter {
         this.restarts = new RestartTracker((await this.getStateAsync(RESTART_STATE))?.val);
         // after a restart of the adapter the summary still shows the old values: they must turn grey in time
         this.lastUpdate = Number((await this.getStateAsync('info.lastUpdate'))?.val) || 0;
+        // last known uplinks survive a restart of the adapter: a device that is offline now keeps its place
+        this.lastUplinks = uplinksFromStored((await this.getStateAsync('topology.json'))?.val);
         await this.subscribeStatesAsync('refresh');
         this.schedule(Math.floor(Math.random() * 5_000), () => this.poll(true));
     }
@@ -248,35 +259,47 @@ class UnifiMap extends utils.Adapter {
         const tree = this.tree!;
         const restarts = this.restarts!;
         const now = Date.now();
-        const statuses = devices.map(device =>
-            deviceStatus({
+        const idByMac = new Map(devices.map(d => [d.mac, d.id]));
+        const statuses = devices.map(device => {
+            const uplink = this.uplinks.get(device.mac);
+            return deviceStatus({
                 device,
                 details: this.details.get(device.id),
                 statistics: this.statistics.get(device.id),
-                uplink: this.uplinks.get(device.mac),
+                uplink,
                 clients: this.clients.get(device.id) ?? 0,
-            }),
-        );
+                classicParentId: uplink?.parentMac ? idByMac.get(uplink.parentMac) : undefined,
+            });
+        });
+        const topology = buildTopology(statuses, this.lastUplinks);
+        const nodes = new Map(topology.nodes.map(n => [n.id, n]));
         for (const status of statuses) {
+            const node = nodes.get(status.id)!;
             const info = restarts.check(status.id, status.uptimeSec, now);
-            await tree.writeDevice(status, info);
-            await this.reportEvents(status, info.restarted, now);
+            await tree.writeDevice(status, info, node);
+            await this.reportEvents(status, node, topology, info.restarted, now);
         }
         await this.setState(RESTART_STATE, restarts.serialize(), true);
+        await tree.writeTopology(topology);
+        this.lastUplinks = rememberUplinks(statuses, this.lastUplinks);
         this.previous = new Map(statuses.map(s => [s.id, s]));
+        this.previousNodes = nodes;
         this.lastUpdate = now;
         await this.setState('info.lastUpdate', now, true);
         await this.setState('info.dataStale', false, true);
-        // problems first, so the widget shows what matters
-        const order = (s: DeviceStatus): number => (s.failed ? 0 : s.degraded ? 1 : 2);
+        // problems first (causes before their consequences), so the widget shows what matters
+        const rank: Record<string, number> = { offline: 0, consequence: 1, degraded: 2, busy: 3, ok: 4 };
         const list = [...statuses]
-            .sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name))
-            .map(s => ({
+            .map(s => ({ s, node: nodes.get(s.id)! }))
+            .sort((a, b) => rank[a.node.state] - rank[b.node.state] || a.s.name.localeCompare(b.s.name))
+            .map(({ s, node }) => ({
                 id: s.id,
                 name: s.name,
                 model: s.model,
                 role: s.role,
-                state: s.failed ? 'offline' : s.degraded ? 'degraded' : s.online ? 'ok' : 'busy',
+                state: node.state,
+                causeId: node.causeId,
+                uplinkId: node.uplinkId,
                 uplinkType: s.uplinkType,
                 linkSpeed: s.linkSpeed ?? null,
                 linkMaxSpeed: s.linkMaxSpeed ?? null,
@@ -289,34 +312,49 @@ class UnifiMap extends utils.Adapter {
     }
 
     /**
-     * Writes events.last when a device fails, comes back, restarts or gets a slow uplink.
+     * Writes events.last. A failure is reported only for its cause, with the number of devices cut off behind it;
+     * devices that are only a consequence get no event of their own. A device that found another way to the
+     * console (e.g. a mesh access point) reports uplinkChanged.
      *
      * @param status - Current status
+     * @param node - Node of the topology
+     * @param topology - Whole topology
      * @param restarted - A restart was found
      * @param now - Time
      */
-    private async reportEvents(status: DeviceStatus, restarted: boolean, now: number): Promise<void> {
+    private async reportEvents(
+        status: DeviceStatus,
+        node: TopologyNode,
+        topology: Topology,
+        restarted: boolean,
+        now: number,
+    ): Promise<void> {
         const before = this.previous.get(status.id);
-        const events: string[] = [];
-        if (before && !before.failed && status.failed) {
-            events.push('offline');
+        const beforeNode = this.previousNodes.get(status.id);
+        const events: { event: string; extra?: Record<string, unknown> }[] = [];
+        if (before && !before.failed && status.failed && node.state === 'offline') {
+            const affected = topology.nodes.filter(n => n.causeId === status.id).length;
+            events.push({ event: 'offline', extra: { affected } });
         }
-        if (before?.failed && !status.failed) {
-            events.push('online');
+        if (before?.failed && !status.failed && beforeNode?.state !== 'consequence') {
+            events.push({ event: 'online' });
         }
         if (restarted) {
-            events.push('restart');
+            events.push({ event: 'restart' });
+        }
+        if (before?.uplinkId && status.uplinkId && before.uplinkId !== status.uplinkId && status.online) {
+            events.push({ event: 'uplinkChanged', extra: { from: before.uplinkId, to: status.uplinkId } });
         }
         if (before && !before.degraded && status.degraded) {
-            events.push('degraded');
+            events.push({ event: 'degraded' });
         }
         if (before?.degraded && !status.degraded && !status.failed) {
-            events.push('recovered');
+            events.push({ event: 'recovered' });
         }
-        for (const event of events) {
+        for (const { event, extra } of events) {
             // names only on debug (audit B.10.18)
             this.log.debug(`Device ${status.id} (${status.model}): ${event}`);
-            const value = { time: now, event, id: status.id, name: status.name, model: status.model };
+            const value = { time: now, event, id: status.id, name: status.name, model: status.model, ...extra };
             await this.setState('events.last', JSON.stringify(value), true);
         }
     }

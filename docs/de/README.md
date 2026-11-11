@@ -5,7 +5,7 @@
 ioBroker-Adapter für UniFi-Netzwerke: Laufen alle Geräte, welcher Uplink ist langsam, welches Gerät hat neu gestartet.
 Topologie-Karte und Firmware-Updates auf Knopfdruck folgen in späteren Versionen.
 
-> **In Arbeit.** Version 0.1.0 liest den Status (Phase 2 von 6). An die Konsole wird nichts geschrieben.
+> **In Arbeit.** Version 0.1.0 liest Status und Topologie (Phase 2 und 3 von 6). An die Konsole wird nichts geschrieben.
 
 ## Funktionen
 - Status jedes UniFi-Geräts (Konsole, Switches, Access Points): online, Firmware, Laufzeit, Clients
@@ -13,7 +13,11 @@ Topologie-Karte und Firmware-Updates auf Knopfdruck folgen in späteren Versione
 - Gelb, wenn ein Kabel-Uplink unter seinem Maximum läuft (z. B. 100 von 1000 Mbit/s); Endgeräte an Switch-Ports zählen nicht
 - Neustart-Erkennung, auch für Neustarts, während der Adapter aus war; Neustarts der letzten 7 Tage
 - Zusammenfassung für eine Kachel: `ok`, `degraded`, `offline`, `stale` (Daten zu alt – nie Grün aus alten Werten)
-- Letztes Ereignis (offline, online, Neustart, langsam, wieder gut) als JSON für Skripte
+- Topologie: wer hängt an wem, Kabel oder Mesh, als JSON für die Karte
+- Ein Ausfall wird nur für die Ursache gemeldet: Geräte, die hinter einem ausgefallenen Gerät abgeschnitten sind,
+  gelten als Folge. Geräte, die einen anderen Weg finden (ein Mesh-AP wechselt zu einem anderen Elterngerät), zählen als
+  online und melden `uplinkChanged`
+- Letztes Ereignis (offline, online, Neustart, Uplink gewechselt, langsam, wieder gut) als JSON für Skripte
 
 ## Voraussetzungen
 - Eine UniFi-Konsole mit UniFi OS und UniFi Network 9.3 oder neuer (getestet mit UDR und Network 10.6.109)
@@ -49,7 +53,9 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | `devices.<id>.lastRestart` / `restartCount7d` | Zeit des letzten Starts, Neustarts der letzten 7 Tage |
 | `devices.<id>.uplinkId` / `uplinkType` / `linkSpeed` / `linkMaxSpeed` / `signal` | Uplink: übergeordnetes Gerät, `wired` oder `wireless`, Tempo (Mesh: Senderate), Signal bei Mesh |
 | `devices.<id>.degraded` / `degradedReason` | Kabel-Uplink unter seinem Maximum |
-| `events.last` | Letztes Ereignis als JSON: `time`, `event`, `id`, `name`, `model` |
+| `devices.<id>.consequence` / `causeId` | Nur deshalb nicht erreichbar, weil das Gerät `causeId` davor ausgefallen ist |
+| `topology.json` | `rootId`, `nodes` (Zustand `ok`, `degraded`, `offline`, `consequence`, `busy`; Elterngerät; Tiefe) und `edges` (Kabel/Mesh, Tempo, Signal) |
+| `events.last` | Letztes Ereignis als JSON: `time`, `event`, `id`, `name`, `model`; `offline` zusätzlich `affected` (dahinter abgeschnittene Geräte), `uplinkChanged` mit `from` und `to` |
 | `refresh` | Taster: alles sofort lesen (höchstens alle 10 s) |
 
 `<id>` ist die ID der UniFi-API, nicht Name oder MAC-Adresse. Updates und Starts (`UPDATING`, `GETTING_READY`)
@@ -67,4 +73,8 @@ zählen nicht als Ausfall.
   klassischen Geräteliste (`/proxy/network/api/s/<site>/stat/device`), die inoffiziell ist und sich mit Updates
   ändern kann. Fällt sie aus, läuft alles andere weiter, nur die Uplink-Felder bleiben leer.
 - Mesh-Links haben kein Höchsttempo und werden deshalb nie gelb.
+- Uplinks werden mit den Details gelesen (Standard alle 5 Minuten, sofort bei einer Zustandsänderung): Ein Mesh-AP,
+  der ohne Zustandsänderung umzieht, fällt mit den nächsten Details auf.
+- Ausgefallene Geräte melden keinen Uplink; der letzte bekannte wird behalten (auch über Adapter-Neustarts), um die
+  Ursache zu finden.
 - Eine Site je Konsole (die erste).

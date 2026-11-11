@@ -116,7 +116,21 @@ const DEVICE_STATES = [
   { key: "clients", name: "Connected clients", type: "number", role: "value", get: (d) => {
     var _a;
     return (_a = d.clients) != null ? _a : null;
-  } }
+  } },
+  {
+    key: "consequence",
+    name: "Unreachable only because a device before it failed",
+    type: "boolean",
+    role: "indicator",
+    get: (_d, _r, n) => n.state === "consequence"
+  },
+  {
+    key: "causeId",
+    name: "Failed device that cuts it off",
+    type: "string",
+    role: "text",
+    get: (_d, _r, n) => n.causeId
+  }
 ];
 const SUMMARY_STATES = [
   { key: "total", name: "Devices", type: "number", role: "value" },
@@ -140,8 +154,9 @@ class ObjectTree {
    *
    * @param device - Status
    * @param restarts - Restart information
+   * @param node - Node of the topology
    */
-  async writeDevice(device, restarts) {
+  async writeDevice(device, restarts, node) {
     const base = `devices.${device.id}`;
     await this.ensureObject("devices", { type: "folder", common: { name: "Devices" }, native: {} });
     await this.ensureObject(base, { type: "device", common: { name: device.name || device.model }, native: {} });
@@ -160,8 +175,22 @@ class ObjectTree {
         },
         native: {}
       });
-      await this.setValue(id, def.get(device, restarts));
+      await this.setValue(id, def.get(device, restarts, node));
     }
+  }
+  /**
+   * Writes the topology for the map.
+   *
+   * @param topology - Nodes and edges
+   */
+  async writeTopology(topology) {
+    await this.ensureObject("topology", { type: "channel", common: { name: "Topology" }, native: {} });
+    await this.ensureObject("topology.json", {
+      type: "state",
+      common: { name: "Nodes and links for the map", type: "string", role: "json", read: true, write: false },
+      native: {}
+    });
+    await this.setValue("topology.json", JSON.stringify(topology));
   }
   /**
    * Writes the summary.

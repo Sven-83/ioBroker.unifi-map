@@ -90,6 +90,8 @@ export interface DeviceInput {
     uplink?: ClassicUplink;
     /** Number of clients */
     clients?: number;
+    /** Parent found through the classic list (current or last uplink), used when the details have none */
+    classicParentId?: string;
 }
 
 /**
@@ -142,7 +144,7 @@ export function deviceStatus(input: DeviceInput): DeviceStatus {
         firmware: device.firmware,
         updatable: device.updatable,
         uptimeSec: online ? statistics?.uptimeSec : undefined,
-        uplinkId: details?.uplinkDeviceId ?? '',
+        uplinkId: details?.uplinkDeviceId || input.classicParentId || '',
         uplinkType: uplink?.type ?? '',
         linkSpeed: uplink?.speedMbps,
         linkMaxSpeed: uplink?.maxSpeedMbps,

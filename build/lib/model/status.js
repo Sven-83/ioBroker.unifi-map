@@ -41,7 +41,7 @@ function roleOf(device, details) {
   return "other";
 }
 function deviceStatus(input) {
-  var _a, _b;
+  var _a;
   const { device, details, statistics, uplink } = input;
   const online = device.state === "ONLINE";
   const role = roleOf(device, details);
@@ -59,8 +59,8 @@ function deviceStatus(input) {
     firmware: device.firmware,
     updatable: device.updatable,
     uptimeSec: online ? statistics == null ? void 0 : statistics.uptimeSec : void 0,
-    uplinkId: (_a = details == null ? void 0 : details.uplinkDeviceId) != null ? _a : "",
-    uplinkType: (_b = uplink == null ? void 0 : uplink.type) != null ? _b : "",
+    uplinkId: (details == null ? void 0 : details.uplinkDeviceId) || input.classicParentId || "",
+    uplinkType: (_a = uplink == null ? void 0 : uplink.type) != null ? _a : "",
     linkSpeed: uplink == null ? void 0 : uplink.speedMbps,
     linkMaxSpeed: uplink == null ? void 0 : uplink.maxSpeedMbps,
     signalDbm: uplink == null ? void 0 : uplink.signalDbm,

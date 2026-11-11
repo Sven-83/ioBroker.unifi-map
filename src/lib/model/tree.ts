@@ -5,6 +5,7 @@
 
 import type { RestartInfo } from './restarts';
 import type { DeviceStatus, NetworkSummary } from './status';
+import type { Topology, TopologyNode } from './topology';
 
 /** What the tree needs from the adapter */
 export interface TreeHost {
@@ -21,7 +22,7 @@ interface StateDef {
     role: string;
     unit?: string;
     states?: Record<string, string>;
-    get: (device: DeviceStatus, restarts: RestartInfo) => ioBroker.StateValue;
+    get: (device: DeviceStatus, restarts: RestartInfo, node: TopologyNode) => ioBroker.StateValue;
 }
 
 /** States of one device */
@@ -104,6 +105,20 @@ export const DEVICE_STATES: StateDef[] = [
         get: d => d.degradedReason,
     },
     { key: 'clients', name: 'Connected clients', type: 'number', role: 'value', get: d => d.clients ?? null },
+    {
+        key: 'consequence',
+        name: 'Unreachable only because a device before it failed',
+        type: 'boolean',
+        role: 'indicator',
+        get: (_d, _r, n) => n.state === 'consequence',
+    },
+    {
+        key: 'causeId',
+        name: 'Failed device that cuts it off',
+        type: 'string',
+        role: 'text',
+        get: (_d, _r, n) => n.causeId,
+    },
 ];
 
 /** States of the summary */
@@ -131,8 +146,9 @@ export class ObjectTree {
      *
      * @param device - Status
      * @param restarts - Restart information
+     * @param node - Node of the topology
      */
-    public async writeDevice(device: DeviceStatus, restarts: RestartInfo): Promise<void> {
+    public async writeDevice(device: DeviceStatus, restarts: RestartInfo, node: TopologyNode): Promise<void> {
         const base = `devices.${device.id}`;
         await this.ensureObject('devices', { type: 'folder', common: { name: 'Devices' }, native: {} });
         await this.ensureObject(base, { type: 'device', common: { name: device.name || device.model }, native: {} });
@@ -151,8 +167,23 @@ export class ObjectTree {
                 },
                 native: {},
             });
-            await this.setValue(id, def.get(device, restarts));
+            await this.setValue(id, def.get(device, restarts, node));
         }
+    }
+
+    /**
+     * Writes the topology for the map.
+     *
+     * @param topology - Nodes and edges
+     */
+    public async writeTopology(topology: Topology): Promise<void> {
+        await this.ensureObject('topology', { type: 'channel', common: { name: 'Topology' }, native: {} });
+        await this.ensureObject('topology.json', {
+            type: 'state',
+            common: { name: 'Nodes and links for the map', type: 'string', role: 'json', read: true, write: false },
+            native: {},
+        });
+        await this.setValue('topology.json', JSON.stringify(topology));
     }
 
     /**
