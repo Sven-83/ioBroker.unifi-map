@@ -1,5 +1,7 @@
 /*
- * Restart detection (pure). A device has restarted when its start time (now - uptime) moved forward. The start
+ * Restart detection (pure). A device has restarted when its start time (time of reading - uptime) moved forward.
+ * The time of reading matters: the uptime is read less often than the check runs, and "now - old uptime" would
+ * drift forward until it looks like a restart. The start
  * time is kept across adapter restarts, so a restart while the adapter was stopped is found as well, and the first
  * value ever seen is never counted as a restart.
  */
@@ -57,13 +59,14 @@ export class RestartTracker {
      * @param id - Device
      * @param uptimeSec - Uptime, undefined if unknown (then nothing changes)
      * @param now - Current time
+     * @param readAt - When the uptime was read (default: now)
      */
-    public check(id: string, uptimeSec: number | undefined, now = Date.now()): RestartInfo {
+    public check(id: string, uptimeSec: number | undefined, now = Date.now(), readAt = now): RestartInfo {
         const entry = this.entries.get(id);
         if (uptimeSec === undefined || uptimeSec < 0) {
             return this.info(entry, now, false);
         }
-        const bootAt = now - uptimeSec * 1000;
+        const bootAt = readAt - uptimeSec * 1000;
         if (!entry) {
             const first = { bootAt, restarts: [] };
             this.entries.set(id, first);

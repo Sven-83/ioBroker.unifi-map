@@ -63,6 +63,8 @@ class UnifiMap extends utils.Adapter {
   lastRefresh = 0;
   details = /* @__PURE__ */ new Map();
   statistics = /* @__PURE__ */ new Map();
+  /** When the statistics (and so the uptime) of each device were read */
+  statisticsReadAt = /* @__PURE__ */ new Map();
   uplinks = /* @__PURE__ */ new Map();
   clients = /* @__PURE__ */ new Map();
   previous = /* @__PURE__ */ new Map();
@@ -194,6 +196,7 @@ class UnifiMap extends utils.Adapter {
       this.details.set(device.id, await client.details(site, device.id));
       if (device.state === "ONLINE") {
         this.statistics.set(device.id, await client.statistics(site, device.id));
+        this.statisticsReadAt.set(device.id, Date.now());
       }
     });
     this.clients = await client.clientCounts(site);
@@ -222,19 +225,20 @@ class UnifiMap extends utils.Adapter {
    * @param devices - Devices of this poll
    */
   async publish(devices) {
+    var _a;
     const tree = this.tree;
     const restarts = this.restarts;
     const now = Date.now();
     const idByMac = new Map(devices.map((d) => [d.mac, d.id]));
     const statuses = devices.map((device) => {
-      var _a, _b;
+      var _a2, _b;
       const uplink = this.uplinks.get(device.mac);
       return (0, import_status.deviceStatus)({
         device,
         details: this.details.get(device.id),
         statistics: this.statistics.get(device.id),
         uplink,
-        clients: (_a = this.clients.get(device.id)) != null ? _a : 0,
+        clients: (_a2 = this.clients.get(device.id)) != null ? _a2 : 0,
         classicParentId: (uplink == null ? void 0 : uplink.parentMac) ? idByMac.get(uplink.parentMac) : void 0,
         classicLastParentId: (uplink == null ? void 0 : uplink.lastParentMac) ? idByMac.get(uplink.lastParentMac) : void 0,
         neighbors: ((_b = uplink == null ? void 0 : uplink.neighbors) != null ? _b : []).flatMap((n) => {
@@ -247,7 +251,7 @@ class UnifiMap extends utils.Adapter {
     const nodes = new Map(topology.nodes.map((n) => [n.id, n]));
     for (const status of statuses) {
       const node = nodes.get(status.id);
-      const info = restarts.check(status.id, status.uptimeSec, now);
+      const info = restarts.check(status.id, status.uptimeSec, now, (_a = this.statisticsReadAt.get(status.id)) != null ? _a : now);
       await tree.writeDevice(status, info, node);
       await this.reportEvents(status, node, topology, info.restarted, now);
     }
@@ -261,7 +265,7 @@ class UnifiMap extends utils.Adapter {
     await this.setState("info.dataStale", false, true);
     const rank = { offline: 0, consequence: 1, degraded: 2, busy: 3, ok: 4 };
     const list = [...statuses].map((s) => ({ s, node: nodes.get(s.id) })).sort((a, b) => rank[a.node.state] - rank[b.node.state] || a.s.name.localeCompare(b.s.name)).map(({ s, node }) => {
-      var _a, _b, _c, _d;
+      var _a2, _b, _c, _d;
       return {
         id: s.id,
         name: s.name,
@@ -271,7 +275,7 @@ class UnifiMap extends utils.Adapter {
         causeId: node.causeId,
         uplinkId: node.uplinkId,
         uplinkType: s.uplinkType,
-        linkSpeed: (_a = s.linkSpeed) != null ? _a : null,
+        linkSpeed: (_a2 = s.linkSpeed) != null ? _a2 : null,
         linkMaxSpeed: (_b = s.linkMaxSpeed) != null ? _b : null,
         uptime: (_c = s.uptimeSec) != null ? _c : null,
         firmware: s.firmware,

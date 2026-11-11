@@ -84,6 +84,8 @@ class UnifiMap extends utils.Adapter {
     private lastRefresh = 0;
     private readonly details = new Map<string, DeviceDetails>();
     private readonly statistics = new Map<string, DeviceStatistics>();
+    /** When the statistics (and so the uptime) of each device were read */
+    private readonly statisticsReadAt = new Map<string, number>();
     private uplinks = new Map<string, ClassicUplink>();
     private clients = new Map<string, number>();
     private previous = new Map<string, DeviceStatus>();
@@ -226,6 +228,7 @@ class UnifiMap extends utils.Adapter {
             this.details.set(device.id, await client.details(site, device.id));
             if (device.state === 'ONLINE') {
                 this.statistics.set(device.id, await client.statistics(site, device.id));
+                this.statisticsReadAt.set(device.id, Date.now());
             }
         });
         this.clients = await client.clientCounts(site);
@@ -280,7 +283,7 @@ class UnifiMap extends utils.Adapter {
         const nodes = new Map(topology.nodes.map(n => [n.id, n]));
         for (const status of statuses) {
             const node = nodes.get(status.id)!;
-            const info = restarts.check(status.id, status.uptimeSec, now);
+            const info = restarts.check(status.id, status.uptimeSec, now, this.statisticsReadAt.get(status.id) ?? now);
             await tree.writeDevice(status, info, node);
             await this.reportEvents(status, node, topology, info.restarted, now);
         }

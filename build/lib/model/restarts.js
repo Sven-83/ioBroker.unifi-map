@@ -51,13 +51,14 @@ class RestartTracker {
    * @param id - Device
    * @param uptimeSec - Uptime, undefined if unknown (then nothing changes)
    * @param now - Current time
+   * @param readAt - When the uptime was read (default: now)
    */
-  check(id, uptimeSec, now = Date.now()) {
+  check(id, uptimeSec, now = Date.now(), readAt = now) {
     const entry = this.entries.get(id);
     if (uptimeSec === void 0 || uptimeSec < 0) {
       return this.info(entry, now, false);
     }
-    const bootAt = now - uptimeSec * 1e3;
+    const bootAt = readAt - uptimeSec * 1e3;
     if (!entry) {
       const first = { bootAt, restarts: [] };
       this.entries.set(id, first);

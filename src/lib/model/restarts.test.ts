@@ -27,6 +27,19 @@ describe('model/restarts', () => {
         expect(info.restarted).to.equal(false);
     });
 
+    it('does not drift into a restart when the uptime is read less often than checked', () => {
+        // uptime read every 5 minutes, checked every minute: the same reading must keep the same start time
+        const tracker = new RestartTracker();
+        let restarts = 0;
+        for (let minute = 0; minute <= 30; minute++) {
+            const readAt = T0 + Math.floor(minute / 5) * 300_000;
+            const uptime = 3600 + (readAt - T0) / 1000;
+            restarts += tracker.check('a', uptime, T0 + minute * 60_000, readAt).restarted ? 1 : 0;
+        }
+        expect(restarts).to.equal(0);
+        expect(tracker.check('a', 20, T0 + 31 * 60_000, T0 + 31 * 60_000).restarted).to.equal(true);
+    });
+
     it('finds a restart that happened while the adapter was stopped', () => {
         const first = new RestartTracker();
         first.check('a', 3600, T0);
