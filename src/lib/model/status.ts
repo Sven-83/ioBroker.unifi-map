@@ -2,8 +2,9 @@
  * State logic (pure, no ioBroker): what each device and the whole network show.
  *
  * - offline (red):    a device is not online and not busy with an update or start
- * - degraded (yellow): all reachable, but a cable uplink runs below its maximum (e.g. 100 of 1000 Mbit/s);
- *                      only uplinks count - endpoints on 10/100 Mbit at switch ports are normal
+ * - degraded (yellow): all reachable, but a cable uplink runs slower than usual (e.g. 100 instead of 1000 Mbit/s).
+ *                      A link that has always been slower than its maximum is normal for this network (Sven 11.11.:
+ *                      e.g. powerline with a 100 Mbit/s port). Only uplinks count, not endpoints at switch ports.
  * - stale (grey):     the data is too old; the tile never shows green from old values
  * - ok (green):       everything else
  */
@@ -52,9 +53,11 @@ export interface DeviceStatus {
     linkSpeed: number | undefined;
     /** Highest link speed in Mbit/s (cable) */
     linkMaxSpeed: number | undefined;
+    /** Usual speed of the cable uplink in Mbit/s (highest seen so far) */
+    linkUsualSpeed: number | undefined;
     /** Signal of a mesh link in dBm */
     signalDbm: number | undefined;
-    /** Cable uplink below its maximum */
+    /** Cable uplink slower than usual */
     degraded: boolean;
     /** Why the device is shown yellow */
     degradedReason: string;
@@ -100,6 +103,8 @@ export interface DeviceInput {
     classicLastParentId?: string;
     /** UniFi devices seen through LLDP, joined to their IDs */
     neighbors?: { id: string; port: number | undefined }[];
+    /** Usual speed of the cable uplink (LinkBaseline), undefined if not known yet */
+    usualSpeedMbps?: number;
 }
 
 /**
@@ -132,14 +137,15 @@ export function deviceStatus(input: DeviceInput): DeviceStatus {
     const role = roleOf(device, details);
     const wired = uplink?.type === 'wired';
     // the console's own uplink is the internet line, not a link inside the network
+    const usual = input.usualSpeedMbps;
     const slow =
         online &&
         role !== 'gateway' &&
         wired &&
         uplink.speedMbps !== undefined &&
-        uplink.maxSpeedMbps !== undefined &&
+        usual !== undefined &&
         uplink.speedMbps > 0 &&
-        uplink.speedMbps < uplink.maxSpeedMbps;
+        uplink.speedMbps < usual;
     return {
         id: device.id,
         name: device.name,
@@ -160,9 +166,10 @@ export function deviceStatus(input: DeviceInput): DeviceStatus {
         uplinkType: uplink?.type ?? '',
         linkSpeed: uplink?.speedMbps,
         linkMaxSpeed: uplink?.maxSpeedMbps,
+        linkUsualSpeed: wired ? usual : undefined,
         signalDbm: uplink?.signalDbm,
         degraded: slow,
-        degradedReason: slow ? `uplink ${uplink.speedMbps} of ${uplink.maxSpeedMbps} Mbit/s` : '',
+        degradedReason: slow ? `uplink ${uplink.speedMbps} instead of the usual ${usual} Mbit/s` : '',
         clients: input.clients,
         uplinkPort: uplink?.remotePort,
         neighbors: input.neighbors ?? [],

@@ -46,7 +46,8 @@ function deviceStatus(input) {
   const online = device.state === "ONLINE";
   const role = roleOf(device, details);
   const wired = (uplink == null ? void 0 : uplink.type) === "wired";
-  const slow = online && role !== "gateway" && wired && uplink.speedMbps !== void 0 && uplink.maxSpeedMbps !== void 0 && uplink.speedMbps > 0 && uplink.speedMbps < uplink.maxSpeedMbps;
+  const usual = input.usualSpeedMbps;
+  const slow = online && role !== "gateway" && wired && uplink.speedMbps !== void 0 && usual !== void 0 && uplink.speedMbps > 0 && uplink.speedMbps < usual;
   return {
     id: device.id,
     name: device.name,
@@ -64,9 +65,10 @@ function deviceStatus(input) {
     uplinkType: (_a = uplink == null ? void 0 : uplink.type) != null ? _a : "",
     linkSpeed: uplink == null ? void 0 : uplink.speedMbps,
     linkMaxSpeed: uplink == null ? void 0 : uplink.maxSpeedMbps,
+    linkUsualSpeed: wired ? usual : void 0,
     signalDbm: uplink == null ? void 0 : uplink.signalDbm,
     degraded: slow,
-    degradedReason: slow ? `uplink ${uplink.speedMbps} of ${uplink.maxSpeedMbps} Mbit/s` : "",
+    degradedReason: slow ? `uplink ${uplink.speedMbps} instead of the usual ${usual} Mbit/s` : "",
     clients: input.clients,
     uplinkPort: uplink == null ? void 0 : uplink.remotePort,
     neighbors: (_b = input.neighbors) != null ? _b : []

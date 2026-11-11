@@ -25,6 +25,7 @@ function dev(
         uplinkType: 'wired',
         linkSpeed: 1000,
         linkMaxSpeed: 1000,
+        linkUsualSpeed: 1000,
         signalDbm: undefined,
         degraded: false,
         degradedReason: '',

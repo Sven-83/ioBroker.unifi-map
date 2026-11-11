@@ -83,6 +83,14 @@ export const DEVICE_STATES: StateDef[] = [
         get: d => d.linkMaxSpeed ?? null,
     },
     {
+        key: 'linkUsualSpeed',
+        name: 'Usual link speed (cable, yellow below it)',
+        type: 'number',
+        role: 'value',
+        unit: 'Mbit/s',
+        get: d => d.linkUsualSpeed ?? null,
+    },
+    {
         key: 'signal',
         name: 'Signal of the mesh link',
         type: 'number',
@@ -92,7 +100,7 @@ export const DEVICE_STATES: StateDef[] = [
     },
     {
         key: 'degraded',
-        name: 'Uplink below its maximum',
+        name: 'Uplink slower than usual',
         type: 'boolean',
         role: 'indicator.alarm',
         get: d => d.degraded,
@@ -126,7 +134,7 @@ export const SUMMARY_STATES: { key: keyof NetworkSummary; name: string; type: io
     { key: 'total', name: 'Devices', type: 'number', role: 'value' },
     { key: 'online', name: 'Devices online', type: 'number', role: 'value' },
     { key: 'offline', name: 'Devices offline', type: 'number', role: 'value' },
-    { key: 'degraded', name: 'Devices with a slow uplink', type: 'number', role: 'value' },
+    { key: 'degraded', name: 'Devices with an uplink slower than usual', type: 'number', role: 'value' },
     { key: 'updates', name: 'Firmware updates available', type: 'number', role: 'value' },
     { key: 'state', name: 'State of the network', type: 'string', role: 'text' },
 ];

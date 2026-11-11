@@ -99,11 +99,19 @@ tests.integration(path.join(__dirname, '..'), {
                 this.timeout(60_000);
                 harness = getHarness();
                 fake = await startFakeConsole();
+                // the link of "Switch Slow" runs at full speed first, so 1000 Mbit/s becomes its usual speed
+                fake.config.devices[4].uplink.speed = 1000;
                 await harness.changeAdapterConfig('unifi-map', { native: configOf(fake) });
                 await harness.startAdapterAndWait();
                 await harness.enableSendTo();
                 await waitFor(async () => (await stateVal(harness, 'info.connection')) === true, 'connection');
                 await waitFor(async () => (await stateVal(harness, 'summary.total')) === 5, 'summary');
+                expect(await stateVal(harness, 'summary.state')).to.equal('ok');
+                // now it gets slower
+                fake.config.devices[4].uplink.speed = 100;
+                await new Promise(resolve => setTimeout(resolve, 10_500));
+                await harness.states.setState(`${NS}.refresh`, { val: true, ack: false });
+                await waitFor(async () => (await stateVal(harness, 'summary.state')) === 'degraded', 'slower link');
             });
 
             after(async () => {
@@ -121,13 +129,13 @@ tests.integration(path.join(__dirname, '..'), {
                 expect(await stateVal(harness, 'info.dataStale')).to.equal(false);
             });
 
-            it('tells cable from mesh and marks the slow cable uplink yellow', async () => {
+            it('tells cable from mesh and marks the uplink that got slower yellow', async () => {
                 expect(await stateVal(harness, `${dev(4)}.uplinkType`)).to.equal('wireless');
                 expect(await stateVal(harness, `${dev(4)}.signal`)).to.equal(-62);
                 expect(await stateVal(harness, `${dev(4)}.degraded`)).to.equal(false);
                 expect(await stateVal(harness, `${dev(5)}.uplinkType`)).to.equal('wired');
                 expect(await stateVal(harness, `${dev(5)}.degraded`)).to.equal(true);
-                expect(await stateVal(harness, `${dev(5)}.degradedReason`)).to.equal('uplink 100 of 1000 Mbit/s');
+                expect(await stateVal(harness, `${dev(5)}.degradedReason`)).to.equal('uplink 100 instead of the usual 1000 Mbit/s');
                 expect(await stateVal(harness, 'summary.degraded')).to.equal(1);
                 expect(await stateVal(harness, 'summary.state')).to.equal('degraded');
             });
@@ -142,6 +150,8 @@ tests.integration(path.join(__dirname, '..'), {
             it('shows a failed device red after a refresh and reports the event', async function () {
                 this.timeout(30_000);
                 fake.config.devices[2].state = 'OFFLINE';
+                // a manual refresh is accepted at most every 10 s (the setup used one)
+                await new Promise(resolve => setTimeout(resolve, 10_500));
                 await harness.states.setState(`${NS}.refresh`, { val: true, ack: false });
                 await waitFor(async () => (await stateVal(harness, 'summary.state')) === 'offline', 'offline');
                 expect(await stateVal(harness, `${dev(3)}.online`)).to.equal(false);
@@ -246,7 +256,8 @@ tests.integration(path.join(__dirname, '..'), {
                 other = await startFakeConsole();
                 await harness.changeAdapterConfig('unifi-map', { native: configOf(fake) });
                 await harness.startAdapterAndWait();
-                await waitFor(async () => (await stateVal(harness, 'summary.state')) === 'degraded', 'first poll');
+                // the slow link is there from the start: it is the usual speed, so the network is green
+                await waitFor(async () => (await stateVal(harness, 'summary.state')) === 'ok', 'first poll');
             });
 
             after(async () => {
@@ -281,6 +292,8 @@ tests.integration(path.join(__dirname, '..'), {
                 await harness.changeAdapterConfig('unifi-map', { native: flat });
                 await harness.startAdapterAndWait();
                 await waitFor(async () => (await stateVal(harness, 'summary.total')) === 5, 'summary');
+                // the connection is confirmed after the summary is written
+                await waitFor(async () => (await stateVal(harness, 'info.connection')) === true, 'connection');
             });
 
             after(async () => {

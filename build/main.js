@@ -26,6 +26,7 @@ var import_certificate = require("./lib/api/certificate");
 var import_client = require("./lib/api/client");
 var import_errors = require("./lib/api/errors");
 var import_http = require("./lib/api/http");
+var import_links = require("./lib/model/links");
 var import_restarts = require("./lib/model/restarts");
 var import_status = require("./lib/model/status");
 var import_topology = require("./lib/model/topology");
@@ -36,6 +37,7 @@ const RETRY_MAX_S = 1800;
 const PARALLEL_REQUESTS = 4;
 const REFRESH_MIN_MS = 1e4;
 const RESTART_STATE = "info.restarts";
+const LINKS_STATE = "info.linkSpeeds";
 async function forEachLimited(items, limit, run) {
   let next = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -52,6 +54,7 @@ class UnifiMap extends utils.Adapter {
   site;
   tree;
   restarts;
+  links;
   timer;
   pollSeconds = import_config.POLL_DEFAULT_S;
   detailSeconds = import_config.DETAIL_DEFAULT_S;
@@ -79,7 +82,7 @@ class UnifiMap extends utils.Adapter {
     this.on("unload", this.onUnload.bind(this));
   }
   async onReady() {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     await this.setState("info.connection", false, true);
     this.pollSeconds = (0, import_config.clamp)(this.config.pollInterval, import_config.POLL_DEFAULT_S, import_config.POLL_MIN_S, import_config.POLL_MAX_S);
     this.detailSeconds = Math.max(
@@ -116,9 +119,11 @@ class UnifiMap extends utils.Adapter {
       writeState: (id, value) => this.setState(id, value, true)
     });
     this.restarts = new import_restarts.RestartTracker((_a = await this.getStateAsync(RESTART_STATE)) == null ? void 0 : _a.val);
-    this.lastUpdate = Number((_b = await this.getStateAsync("info.lastUpdate")) == null ? void 0 : _b.val) || 0;
-    this.lastUplinks = (0, import_topology.uplinksFromStored)((_c = await this.getStateAsync("topology.json")) == null ? void 0 : _c.val);
+    this.links = new import_links.LinkBaseline((_b = await this.getStateAsync(LINKS_STATE)) == null ? void 0 : _b.val);
+    this.lastUpdate = Number((_c = await this.getStateAsync("info.lastUpdate")) == null ? void 0 : _c.val) || 0;
+    this.lastUplinks = (0, import_topology.uplinksFromStored)((_d = await this.getStateAsync("topology.json")) == null ? void 0 : _d.val);
     await this.subscribeStatesAsync("refresh");
+    await this.subscribeStatesAsync("acceptLinkSpeeds");
     this.schedule(Math.floor(Math.random() * 5e3), () => this.poll(true));
   }
   /**
@@ -228,17 +233,20 @@ class UnifiMap extends utils.Adapter {
     var _a;
     const tree = this.tree;
     const restarts = this.restarts;
+    const links = this.links;
     const now = Date.now();
     const idByMac = new Map(devices.map((d) => [d.mac, d.id]));
     const statuses = devices.map((device) => {
       var _a2, _b;
       const uplink = this.uplinks.get(device.mac);
+      const link = (uplink == null ? void 0 : uplink.type) === "wired" && device.state === "ONLINE" ? links.check(device.id, uplink.speedMbps) : void 0;
       return (0, import_status.deviceStatus)({
         device,
         details: this.details.get(device.id),
         statistics: this.statistics.get(device.id),
         uplink,
         clients: (_a2 = this.clients.get(device.id)) != null ? _a2 : 0,
+        usualSpeedMbps: link == null ? void 0 : link.usual,
         classicParentId: (uplink == null ? void 0 : uplink.parentMac) ? idByMac.get(uplink.parentMac) : void 0,
         classicLastParentId: (uplink == null ? void 0 : uplink.lastParentMac) ? idByMac.get(uplink.lastParentMac) : void 0,
         neighbors: ((_b = uplink == null ? void 0 : uplink.neighbors) != null ? _b : []).flatMap((n) => {
@@ -256,6 +264,7 @@ class UnifiMap extends utils.Adapter {
       await this.reportEvents(status, node, topology, info.restarted, now);
     }
     await this.setState(RESTART_STATE, restarts.serialize(), true);
+    await this.setState(LINKS_STATE, links.serialize(), true);
     await tree.writeTopology(topology);
     this.lastUplinks = (0, import_topology.rememberUplinks)(statuses, this.lastUplinks);
     this.previous = new Map(statuses.map((s) => [s.id, s]));
@@ -381,7 +390,15 @@ class UnifiMap extends utils.Adapter {
    * @param state - State
    */
   onStateChange(id, state) {
-    if (!state || state.ack || id !== `${this.namespace}.refresh`) {
+    var _a;
+    if (!state || state.ack) {
+      return;
+    }
+    if (id === `${this.namespace}.acceptLinkSpeeds`) {
+      (_a = this.links) == null ? void 0 : _a.reset();
+      this.log.info("Current link speeds are accepted as usual");
+      this.lastRefresh = 0;
+    } else if (id !== `${this.namespace}.refresh`) {
       return;
     }
     const now = Date.now();

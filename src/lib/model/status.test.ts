@@ -62,12 +62,18 @@ describe('model/status', () => {
     });
 
     describe('deviceStatus', () => {
-        it('marks a cable uplink below its maximum as degraded', () => {
-            const status = deviceStatus(input({ uplink: wired(100, 1000) }));
+        it('marks a cable uplink slower than usual as degraded', () => {
+            const status = deviceStatus(input({ uplink: wired(100, 1000), usualSpeedMbps: 1000 }));
             expect(status.degraded).to.equal(true);
-            expect(status.degradedReason).to.equal('uplink 100 of 1000 Mbit/s');
+            expect(status.degradedReason).to.equal('uplink 100 instead of the usual 1000 Mbit/s');
+            expect(status.linkUsualSpeed).to.equal(1000);
             expect(status.uplinkType).to.equal('wired');
             expect(status.linkSpeed).to.equal(100);
+        });
+
+        it('accepts a link that has always been below its maximum (e.g. powerline with 100 Mbit/s)', () => {
+            expect(deviceStatus(input({ uplink: wired(100, 1000), usualSpeedMbps: 100 })).degraded).to.equal(false);
+            expect(deviceStatus(input({ uplink: wired(100, 1000) })).degraded, 'usual speed unknown').to.equal(false);
         });
 
         it('does not mark a mesh uplink, a full speed link or the internet line of the console', () => {
@@ -77,6 +83,7 @@ describe('model/status', () => {
                 device: device({ features: ['switching', 'accessPoint'] }),
                 details: { uplinkDeviceId: undefined },
                 uplink: wired(100, 1000),
+                usualSpeedMbps: 1000,
             });
             expect(deviceStatus(console).degraded).to.equal(false);
         });
@@ -97,7 +104,9 @@ describe('model/status', () => {
         });
 
         it('shows no uptime and no slow link for a device that is not online', () => {
-            const status = deviceStatus(input({ device: device({ state: 'OFFLINE' }), uplink: wired(100, 1000) }));
+            const status = deviceStatus(
+                input({ device: device({ state: 'OFFLINE' }), uplink: wired(100, 1000), usualSpeedMbps: 1000 }),
+            );
             expect(status.uptimeSec).to.equal(undefined);
             expect(status.degraded).to.equal(false);
         });
@@ -130,7 +139,7 @@ describe('model/status', () => {
 
     describe('summarize', () => {
         const ok = deviceStatus(input());
-        const slow = deviceStatus(input({ uplink: wired(100, 1000) }));
+        const slow = deviceStatus(input({ uplink: wired(100, 1000), usualSpeedMbps: 1000 }));
         const off = deviceStatus(input({ device: device({ state: 'OFFLINE' }) }));
         const busy = deviceStatus(input({ device: device({ state: 'UPDATING', updatable: true }) }));
 

@@ -89,6 +89,17 @@ const DEVICE_STATES = [
     }
   },
   {
+    key: "linkUsualSpeed",
+    name: "Usual link speed (cable, yellow below it)",
+    type: "number",
+    role: "value",
+    unit: "Mbit/s",
+    get: (d) => {
+      var _a;
+      return (_a = d.linkUsualSpeed) != null ? _a : null;
+    }
+  },
+  {
     key: "signal",
     name: "Signal of the mesh link",
     type: "number",
@@ -101,7 +112,7 @@ const DEVICE_STATES = [
   },
   {
     key: "degraded",
-    name: "Uplink below its maximum",
+    name: "Uplink slower than usual",
     type: "boolean",
     role: "indicator.alarm",
     get: (d) => d.degraded
@@ -136,7 +147,7 @@ const SUMMARY_STATES = [
   { key: "total", name: "Devices", type: "number", role: "value" },
   { key: "online", name: "Devices online", type: "number", role: "value" },
   { key: "offline", name: "Devices offline", type: "number", role: "value" },
-  { key: "degraded", name: "Devices with a slow uplink", type: "number", role: "value" },
+  { key: "degraded", name: "Devices with an uplink slower than usual", type: "number", role: "value" },
   { key: "updates", name: "Firmware updates available", type: "number", role: "value" },
   { key: "state", name: "State of the network", type: "string", role: "text" }
 ];

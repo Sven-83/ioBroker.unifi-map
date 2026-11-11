@@ -161,6 +161,19 @@
             "native": {}
         },
         {
+            "_id": "info.linkSpeeds",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": "Usual speed of the cable uplinks (internal)",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": "{}"
+            },
+            "native": {}
+        },
+        {
             "_id": "events",
             "type": "channel",
             "common": { "name": "Events" },
@@ -176,6 +189,18 @@
                 "read": true,
                 "write": false,
                 "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "acceptLinkSpeeds",
+            "type": "state",
+            "common": {
+                "role": "button",
+                "name": "Accept the current link speeds as usual (e.g. after changing a cable)",
+                "type": "boolean",
+                "read": false,
+                "write": true
             },
             "native": {}
         },

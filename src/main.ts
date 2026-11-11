@@ -15,6 +15,7 @@ import {
     describeError,
 } from './lib/api/errors';
 import { UnifiHttp } from './lib/api/http';
+import { LinkBaseline } from './lib/model/links';
 import { RestartTracker } from './lib/model/restarts';
 import { deviceStatus, isStale, summarize, type DeviceStatus } from './lib/model/status';
 import {
@@ -48,6 +49,8 @@ const PARALLEL_REQUESTS = 4;
 const REFRESH_MIN_MS = 10_000;
 /** Internal state with the start times of the devices */
 const RESTART_STATE = 'info.restarts';
+/** Internal state with the usual speed of each cable uplink */
+const LINKS_STATE = 'info.linkSpeeds';
 
 /**
  * Runs a function for all items, at most `limit` at the same time.
@@ -73,6 +76,7 @@ class UnifiMap extends utils.Adapter {
     private site: UnifiSite | undefined;
     private tree: ObjectTree | undefined;
     private restarts: RestartTracker | undefined;
+    private links: LinkBaseline | undefined;
     private timer: ioBroker.Timeout | undefined;
     private pollSeconds = POLL_DEFAULT_S;
     private detailSeconds = DETAIL_DEFAULT_S;
@@ -146,11 +150,13 @@ class UnifiMap extends utils.Adapter {
             writeState: (id, value) => this.setState(id, value, true),
         });
         this.restarts = new RestartTracker((await this.getStateAsync(RESTART_STATE))?.val);
+        this.links = new LinkBaseline((await this.getStateAsync(LINKS_STATE))?.val);
         // after a restart of the adapter the summary still shows the old values: they must turn grey in time
         this.lastUpdate = Number((await this.getStateAsync('info.lastUpdate'))?.val) || 0;
         // last known uplinks survive a restart of the adapter: a device that is offline now keeps its place
         this.lastUplinks = uplinksFromStored((await this.getStateAsync('topology.json'))?.val);
         await this.subscribeStatesAsync('refresh');
+        await this.subscribeStatesAsync('acceptLinkSpeeds');
         this.schedule(Math.floor(Math.random() * 5_000), () => this.poll(true));
     }
 
@@ -261,16 +267,23 @@ class UnifiMap extends utils.Adapter {
     private async publish(devices: UnifiDevice[]): Promise<void> {
         const tree = this.tree!;
         const restarts = this.restarts!;
+        const links = this.links!;
         const now = Date.now();
         const idByMac = new Map(devices.map(d => [d.mac, d.id]));
         const statuses = devices.map(device => {
             const uplink = this.uplinks.get(device.mac);
+            // only a cable uplink of an online device teaches the usual speed
+            const link =
+                uplink?.type === 'wired' && device.state === 'ONLINE'
+                    ? links.check(device.id, uplink.speedMbps)
+                    : undefined;
             return deviceStatus({
                 device,
                 details: this.details.get(device.id),
                 statistics: this.statistics.get(device.id),
                 uplink,
                 clients: this.clients.get(device.id) ?? 0,
+                usualSpeedMbps: link?.usual,
                 classicParentId: uplink?.parentMac ? idByMac.get(uplink.parentMac) : undefined,
                 classicLastParentId: uplink?.lastParentMac ? idByMac.get(uplink.lastParentMac) : undefined,
                 neighbors: (uplink?.neighbors ?? []).flatMap(n => {
@@ -288,6 +301,7 @@ class UnifiMap extends utils.Adapter {
             await this.reportEvents(status, node, topology, info.restarted, now);
         }
         await this.setState(RESTART_STATE, restarts.serialize(), true);
+        await this.setState(LINKS_STATE, links.serialize(), true);
         await tree.writeTopology(topology);
         this.lastUplinks = rememberUplinks(statuses, this.lastUplinks);
         this.previous = new Map(statuses.map(s => [s.id, s]));
@@ -431,7 +445,15 @@ class UnifiMap extends utils.Adapter {
      * @param state - State
      */
     private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
-        if (!state || state.ack || id !== `${this.namespace}.refresh`) {
+        if (!state || state.ack) {
+            return;
+        }
+        if (id === `${this.namespace}.acceptLinkSpeeds`) {
+            // the current speeds become the usual ones with the next poll
+            this.links?.reset();
+            this.log.info('Current link speeds are accepted as usual');
+            this.lastRefresh = 0;
+        } else if (id !== `${this.namespace}.refresh`) {
             return;
         }
         const now = Date.now();
