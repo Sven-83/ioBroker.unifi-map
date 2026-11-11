@@ -23,6 +23,8 @@ const wired = (speed: number, max: number): ClassicUplink => ({
     signalDbm: undefined,
     parentMac: '',
     lastParentMac: '',
+    remotePort: undefined,
+    neighbors: [],
 });
 const mesh: ClassicUplink = {
     type: 'wireless',
@@ -31,6 +33,8 @@ const mesh: ClassicUplink = {
     signalDbm: -62,
     parentMac: '',
     lastParentMac: '',
+    remotePort: undefined,
+    neighbors: [],
 };
 const input = (overrides: Partial<DeviceInput> = {}): DeviceInput => ({
     device: device(),

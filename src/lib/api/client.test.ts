@@ -53,6 +53,8 @@ describe('api/client', () => {
                 signalDbm: undefined,
                 parentMac: '',
                 lastParentMac: '',
+                remotePort: undefined,
+                neighbors: [],
             });
             expect(
                 parseClassicUplink({
@@ -65,8 +67,27 @@ describe('api/client', () => {
                 signalDbm: -62,
                 parentMac: mac(1),
                 lastParentMac: '',
+                remotePort: undefined,
+                neighbors: [],
             });
             expect(parseClassicUplink({}).type).to.equal(undefined);
+        });
+
+        it('reads the parent port and the LLDP neighbours on cable ports only', () => {
+            const u = parseClassicUplink({
+                uplink: { type: 'wire', uplink_remote_port: 4 },
+                lldp_table: [
+                    { local_port_idx: 1, chassis_id: mac(5).toUpperCase(), is_wired: true },
+                    { chassis_id: mac(6), is_wired: false },
+                    { local_port_idx: 2, is_wired: true },
+                    'junk',
+                ],
+            });
+            expect(u.remotePort).to.equal(4);
+            expect(u.neighbors).to.deep.equal([{ mac: mac(5), port: 1 }]);
+            expect(
+                parseClassicUplink({ lldp_table: Array(100).fill({ chassis_id: mac(5), is_wired: true }) }).neighbors,
+            ).to.have.length(64);
         });
 
         it('keeps the current and the last known parent apart', () => {

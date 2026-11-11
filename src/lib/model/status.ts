@@ -60,6 +60,10 @@ export interface DeviceStatus {
     degradedReason: string;
     /** Connected clients */
     clients: number | undefined;
+    /** Port of the parent device the cable ends in */
+    uplinkPort: number | undefined;
+    /** UniFi devices seen on the own cable ports (LLDP) */
+    neighbors: { id: string; port: number | undefined }[];
 }
 
 /** Counts and state of the whole network */
@@ -94,6 +98,8 @@ export interface DeviceInput {
     classicParentId?: string;
     /** Last known parent of the classic list, used only while the device is not online */
     classicLastParentId?: string;
+    /** UniFi devices seen through LLDP, joined to their IDs */
+    neighbors?: { id: string; port: number | undefined }[];
 }
 
 /**
@@ -158,6 +164,8 @@ export function deviceStatus(input: DeviceInput): DeviceStatus {
         degraded: slow,
         degradedReason: slow ? `uplink ${uplink.speedMbps} of ${uplink.maxSpeedMbps} Mbit/s` : '',
         clients: input.clients,
+        uplinkPort: uplink?.remotePort,
+        neighbors: input.neighbors ?? [],
     };
 }
 

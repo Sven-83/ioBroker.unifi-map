@@ -24,8 +24,9 @@ __export(topology_exports, {
 });
 module.exports = __toCommonJS(topology_exports);
 const MAX_DEPTH = 32;
+const PLACEHOLDER = "unknown-switch-";
 function buildTopology(devices, lastUplinks) {
-  var _a, _b, _c, _d, _e;
+  var _a, _b, _c, _d, _e, _f;
   const byId = new Map(devices.map((d) => [d.id, d]));
   const parentOf = (d) => {
     if (d.uplinkId && byId.has(d.uplinkId)) {
@@ -39,7 +40,7 @@ function buildTopology(devices, lastUplinks) {
   };
   const parents = new Map(devices.map((d) => [d.id, parentOf(d)]));
   const root = (_b = (_a = devices.find((d) => d.role === "gateway")) == null ? void 0 : _a.id) != null ? _b : "";
-  const placeholders = placeUnknownSwitches(devices, parents, root);
+  const placeholders = placeUnknownSwitches(devices, parents, root, byId);
   const walk = (id) => {
     var _a2, _b2, _c2;
     let depth = 0;
@@ -60,14 +61,14 @@ function buildTopology(devices, lastUplinks) {
     }
     return { depth, cause };
   };
-  const nodes = placeholders.map((id) => ({
-    id,
+  const nodes = placeholders.map((p) => ({
+    id: p.id,
     name: "",
     model: "",
     role: "unknownSwitch",
     state: "ok",
-    uplinkId: root,
-    depth: root ? 1 : -1,
+    uplinkId: p.parent,
+    depth: walk(p.id).depth,
     causeId: "",
     updatable: false,
     virtual: true
@@ -101,16 +102,20 @@ function buildTopology(devices, lastUplinks) {
       };
     })
   );
-  const edges = placeholders.filter(() => root).map((id) => ({
-    from: root,
-    to: id,
-    type: "",
-    speed: null,
-    maxSpeed: null,
-    signal: null,
-    degraded: false,
-    remembered: false
-  }));
+  const edges = placeholders.filter((p) => p.parent).map((p) => {
+    var _a2;
+    return {
+      from: p.parent,
+      to: p.id,
+      type: "",
+      speed: null,
+      maxSpeed: null,
+      signal: null,
+      degraded: false,
+      remembered: false,
+      port: (_a2 = p.port) != null ? _a2 : null
+    };
+  });
   for (const d of devices) {
     const parent = parents.get(d.id);
     if (!parent.id) {
@@ -124,14 +129,16 @@ function buildTopology(devices, lastUplinks) {
       maxSpeed: (_d = d.linkMaxSpeed) != null ? _d : null,
       signal: (_e = d.signalDbm) != null ? _e : null,
       degraded: d.degraded,
-      remembered: parent.remembered
+      remembered: parent.remembered,
+      // behind a placeholder the reported port belongs to the other member, not to the section
+      port: d.uplinkType === "wired" && !parent.id.startsWith(PLACEHOLDER) ? (_f = d.uplinkPort) != null ? _f : null : null
     });
   }
   return { rootId: root, nodes, edges };
 }
-function placeUnknownSwitches(devices, parents, root) {
+function placeUnknownSwitches(devices, parents, root, byId) {
   var _a, _b, _c, _d;
-  const placeholders = [];
+  const circles = [];
   const done = /* @__PURE__ */ new Set();
   for (const device of devices) {
     const path = [];
@@ -143,18 +150,52 @@ function placeUnknownSwitches(devices, parents, root) {
       current = (_b = (_a = parents.get(current)) == null ? void 0 : _a.id) != null ? _b : "";
     }
     if (current && onPath.has(current)) {
-      const id = `unknown-switch-${placeholders.length + 1}`;
-      for (const member of path.slice(path.indexOf(current))) {
+      const id = `${PLACEHOLDER}${circles.length + 1}`;
+      const members = path.slice(path.indexOf(current));
+      for (const member of members) {
         parents.set(member, { id, remembered: (_d = (_c = parents.get(member)) == null ? void 0 : _c.remembered) != null ? _d : false });
       }
       parents.set(id, { id: root, remembered: false });
-      placeholders.push(id);
+      circles.push({ id, members });
     }
     for (const id of path) {
       done.add(id);
     }
   }
-  return placeholders;
+  return circles.map(({ id, members }) => {
+    const found = attachPoint(members, devices, byId);
+    if (found && !leadsThrough(found.id, id, parents)) {
+      parents.set(id, { id: found.id, remembered: false });
+      return { id, parent: found.id, port: found.port };
+    }
+    return { id, parent: root, port: void 0 };
+  });
+}
+function attachPoint(members, devices, byId) {
+  var _a;
+  const inCircle = new Set(members);
+  const seenByAll = devices.filter((d) => !inCircle.has(d.id)).filter((d) => members.every((m) => {
+    var _a2;
+    return (_a2 = byId.get(m)) == null ? void 0 : _a2.neighbors.some((n) => n.id === d.id);
+  })).map((d) => d.id);
+  const towards = (id) => {
+    var _a2;
+    return (_a2 = byId.get(id)) == null ? void 0 : _a2.neighbors.find((n) => inCircle.has(n.id));
+  };
+  const confirmed = seenByAll.filter((id) => towards(id));
+  const pick = confirmed.length === 1 ? confirmed[0] : seenByAll.length === 1 ? seenByAll[0] : void 0;
+  return pick ? { id: pick, port: (_a = towards(pick)) == null ? void 0 : _a.port } : void 0;
+}
+function leadsThrough(from, target, parents) {
+  var _a, _b;
+  let current = from;
+  for (let i = 0; i < MAX_DEPTH && current; i++) {
+    if (current === target) {
+      return true;
+    }
+    current = (_b = (_a = parents.get(current)) == null ? void 0 : _a.id) != null ? _b : "";
+  }
+  return false;
 }
 function rootCause(start, parents, byId) {
   var _a, _b, _c;

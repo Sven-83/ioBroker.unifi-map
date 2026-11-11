@@ -227,7 +227,7 @@ class UnifiMap extends utils.Adapter {
     const now = Date.now();
     const idByMac = new Map(devices.map((d) => [d.mac, d.id]));
     const statuses = devices.map((device) => {
-      var _a;
+      var _a, _b;
       const uplink = this.uplinks.get(device.mac);
       return (0, import_status.deviceStatus)({
         device,
@@ -236,7 +236,11 @@ class UnifiMap extends utils.Adapter {
         uplink,
         clients: (_a = this.clients.get(device.id)) != null ? _a : 0,
         classicParentId: (uplink == null ? void 0 : uplink.parentMac) ? idByMac.get(uplink.parentMac) : void 0,
-        classicLastParentId: (uplink == null ? void 0 : uplink.lastParentMac) ? idByMac.get(uplink.lastParentMac) : void 0
+        classicLastParentId: (uplink == null ? void 0 : uplink.lastParentMac) ? idByMac.get(uplink.lastParentMac) : void 0,
+        neighbors: ((_b = uplink == null ? void 0 : uplink.neighbors) != null ? _b : []).flatMap((n) => {
+          const id = idByMac.get(n.mac);
+          return id ? [{ id, port: n.port }] : [];
+        })
       });
     });
     const topology = (0, import_topology.buildTopology)(statuses, this.lastUplinks);

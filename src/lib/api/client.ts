@@ -68,7 +68,22 @@ export interface ClassicUplink {
     parentMac: string;
     /** MAC of the last known parent; only meaningful for a device that is not online (history otherwise) */
     lastParentMac: string;
+    /** Port of the parent device the cable ends in (cable only) */
+    remotePort: number | undefined;
+    /** UniFi devices seen on the own cable ports (LLDP) */
+    neighbors: LldpNeighbor[];
 }
+
+/** Neighbour seen through LLDP on a cable port */
+export interface LldpNeighbor {
+    /** MAC of the neighbour */
+    mac: string;
+    /** Own port the neighbour was seen on */
+    port: number | undefined;
+}
+
+/** Upper limit of LLDP entries read per device, so a broken answer cannot grow without end */
+const MAX_NEIGHBORS = 64;
 
 /** Site of the console */
 export interface UnifiSite {
@@ -130,6 +145,12 @@ export function parseDevice(entry: unknown): UnifiDevice | undefined {
 export function parseClassicUplink(entry: unknown): ClassicUplink {
     const uplink = record(record(entry).uplink);
     const last = record(record(entry).last_uplink);
+    const table = record(entry).lldp_table;
+    const neighbors: LldpNeighbor[] = (Array.isArray(table) ? table.slice(0, MAX_NEIGHBORS) : [])
+        .map(record)
+        // only cable ports: the wireless entry of a mesh access point names its mesh parent
+        .filter(l => l.is_wired === true && text(l.chassis_id) !== '')
+        .map(l => ({ mac: text(l.chassis_id).toLowerCase(), port: num(l.local_port_idx) }));
     const parentMac = text(uplink.uplink_mac).toLowerCase();
     const lastParentMac = text(last.uplink_mac).toLowerCase();
     const type = uplink.type === 'wire' ? 'wired' : uplink.type === 'wireless' ? 'wireless' : undefined;
@@ -143,6 +164,8 @@ export function parseClassicUplink(entry: unknown): ClassicUplink {
             signalDbm: num(uplink.signal),
             parentMac,
             lastParentMac,
+            remotePort: undefined,
+            neighbors,
         };
     }
     return {
@@ -152,6 +175,8 @@ export function parseClassicUplink(entry: unknown): ClassicUplink {
         signalDbm: undefined,
         parentMac,
         lastParentMac,
+        remotePort: type === 'wired' ? num(uplink.uplink_remote_port) : undefined,
+        neighbors,
     };
 }
 

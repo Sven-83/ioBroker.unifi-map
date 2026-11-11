@@ -8,15 +8,18 @@
  *
  * Failed devices often report no uplink any more, so the last known uplink is kept.
  *
- * Devices that point at each other in a circle are connected through a switch that is not a UniFi device: simple
- * switches pass the discovery packets (LLDP) on, so two access points behind one see each other as parent. They are
- * put below a placeholder "unknown switch" under the console.
+ * Devices that point at each other in a circle are connected through a section that is not UniFi (a simple switch or
+ * powerline adapters): it passes the discovery packets (LLDP) on, so two access points behind it see each other as
+ * parent. They are put below a placeholder. The placeholder hangs below the UniFi device that all members of the
+ * circle see as LLDP neighbour (that is where the section is plugged in), otherwise below the console.
  */
 
 import type { DeviceStatus } from './status';
 
 /** Longest chain followed, so a broken answer with a loop cannot hang the adapter */
 const MAX_DEPTH = 32;
+/** ID prefix of placeholders */
+const PLACEHOLDER = 'unknown-switch-';
 
 /** Node of the map */
 export interface TopologyNode {
@@ -26,7 +29,7 @@ export interface TopologyNode {
     name: string;
     /** Model */
     model: string;
-    /** Role; unknownSwitch for the placeholder of a switch that is not a UniFi device */
+    /** Role; unknownSwitch for the placeholder of a section that is not UniFi (simple switch, powerline) */
     role: DeviceStatus['role'] | 'unknownSwitch';
     /** Placeholder, not a device of the console */
     virtual: boolean;
@@ -60,6 +63,8 @@ export interface TopologyEdge {
     degraded: boolean;
     /** The uplink is the last known one, the device reports none at the moment */
     remembered: boolean;
+    /** Port of the parent device, if known */
+    port: number | null;
 }
 
 /** The whole map */
@@ -93,7 +98,7 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
     };
     const parents = new Map(devices.map(d => [d.id, parentOf(d)]));
     const root = devices.find(d => d.role === 'gateway')?.id ?? '';
-    const placeholders = placeUnknownSwitches(devices, parents, root);
+    const placeholders = placeUnknownSwitches(devices, parents, root, byId);
 
     // walks up to the console; returns depth and the nearest failed ancestor
     const walk = (id: string): { depth: number; cause: string } => {
@@ -116,14 +121,14 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
         return { depth, cause };
     };
 
-    const nodes: TopologyNode[] = placeholders.map(id => ({
-        id,
+    const nodes: TopologyNode[] = placeholders.map(p => ({
+        id: p.id,
         name: '',
         model: '',
         role: 'unknownSwitch' as const,
         state: 'ok' as const,
-        uplinkId: root,
-        depth: root ? 1 : -1,
+        uplinkId: p.parent,
+        depth: walk(p.id).depth,
         causeId: '',
         updatable: false,
         virtual: true,
@@ -158,16 +163,17 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
     );
 
     const edges: TopologyEdge[] = placeholders
-        .filter(() => root)
-        .map(id => ({
-            from: root,
-            to: id,
+        .filter(p => p.parent)
+        .map(p => ({
+            from: p.parent,
+            to: p.id,
             type: '' as const,
             speed: null,
             maxSpeed: null,
             signal: null,
             degraded: false,
             remembered: false,
+            port: p.port ?? null,
         }));
     for (const d of devices) {
         const parent = parents.get(d.id)!;
@@ -183,26 +189,41 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
             signal: d.signalDbm ?? null,
             degraded: d.degraded,
             remembered: parent.remembered,
+            // behind a placeholder the reported port belongs to the other member, not to the section
+            port: d.uplinkType === 'wired' && !parent.id.startsWith(PLACEHOLDER) ? (d.uplinkPort ?? null) : null,
         });
     }
     return { rootId: root, nodes, edges };
 }
 
+/** Placeholder for a section that is not UniFi */
+interface Placeholder {
+    /** ID, unknown-switch-<n> */
+    id: string;
+    /** Device the section is plugged into, the console if none was found */
+    parent: string;
+    /** Port of that device, if LLDP names it */
+    port: number | undefined;
+}
+
 /**
- * Finds devices that point at each other in a circle and puts each circle below a placeholder for a switch that
- * is not a UniFi device. Changes `parents` in place.
+ * Finds devices that point at each other in a circle and puts each circle below a placeholder for a section that
+ * is not UniFi. The placeholder hangs below the device found through LLDP, otherwise below the console.
+ * Changes `parents` in place.
  *
  * @param devices - All devices
  * @param parents - Parent per device
  * @param root - Console
- * @returns IDs of the placeholders
+ * @param byId - Devices by ID
+ * @returns The placeholders
  */
 function placeUnknownSwitches(
     devices: DeviceStatus[],
     parents: Map<string, { id: string; remembered: boolean }>,
     root: string,
-): string[] {
-    const placeholders: string[] = [];
+    byId: ReadonlyMap<string, DeviceStatus>,
+): Placeholder[] {
+    const circles: { id: string; members: string[] }[] = [];
     const done = new Set<string>();
     for (const device of devices) {
         const path: string[] = [];
@@ -214,18 +235,72 @@ function placeUnknownSwitches(
             current = parents.get(current)?.id ?? '';
         }
         if (current && onPath.has(current)) {
-            const id = `unknown-switch-${placeholders.length + 1}`;
-            for (const member of path.slice(path.indexOf(current))) {
+            const id = `${PLACEHOLDER}${circles.length + 1}`;
+            const members = path.slice(path.indexOf(current));
+            for (const member of members) {
                 parents.set(member, { id, remembered: parents.get(member)?.remembered ?? false });
             }
             parents.set(id, { id: root, remembered: false });
-            placeholders.push(id);
+            circles.push({ id, members });
         }
         for (const id of path) {
             done.add(id);
         }
     }
-    return placeholders;
+    // only after all circles are resolved: the device found through LLDP may itself sit behind a placeholder
+    return circles.map(({ id, members }) => {
+        const found = attachPoint(members, devices, byId);
+        if (found && !leadsThrough(found.id, id, parents)) {
+            parents.set(id, { id: found.id, remembered: false });
+            return { id, parent: found.id, port: found.port };
+        }
+        return { id, parent: root, port: undefined };
+    });
+}
+
+/**
+ * The UniFi device a section that is not UniFi is plugged into: the one that every member of the circle sees as
+ * LLDP neighbour. If several qualify, the one that also sees a member on one of its own ports wins. Undefined if
+ * no single device is found.
+ *
+ * @param members - Devices of the circle
+ * @param devices - All devices
+ * @param byId - Devices by ID
+ */
+function attachPoint(
+    members: string[],
+    devices: DeviceStatus[],
+    byId: ReadonlyMap<string, DeviceStatus>,
+): { id: string; port: number | undefined } | undefined {
+    const inCircle = new Set(members);
+    const seenByAll = devices
+        .filter(d => !inCircle.has(d.id))
+        .filter(d => members.every(m => byId.get(m)?.neighbors.some(n => n.id === d.id)))
+        .map(d => d.id);
+    // the device's own entry for a member, if it sees one
+    const towards = (id: string): { port: number | undefined } | undefined =>
+        byId.get(id)?.neighbors.find(n => inCircle.has(n.id));
+    const confirmed = seenByAll.filter(id => towards(id));
+    const pick = confirmed.length === 1 ? confirmed[0] : seenByAll.length === 1 ? seenByAll[0] : undefined;
+    return pick ? { id: pick, port: towards(pick)?.port } : undefined;
+}
+
+/**
+ * The way from a device up to the console passes the given node.
+ *
+ * @param from - Start
+ * @param target - Node looked for
+ * @param parents - Parent per device
+ */
+function leadsThrough(from: string, target: string, parents: ReadonlyMap<string, { id: string }>): boolean {
+    let current = from;
+    for (let i = 0; i < MAX_DEPTH && current; i++) {
+        if (current === target) {
+            return true;
+        }
+        current = parents.get(current)?.id ?? '';
+    }
+    return false;
 }
 
 /**

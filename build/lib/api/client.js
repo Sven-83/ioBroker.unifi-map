@@ -32,6 +32,7 @@ const INTEGRATION_PATH = "/proxy/network/integration/v1";
 const CLASSIC_PATH = "/proxy/network/api/s";
 const PAGE_SIZE = 200;
 const MAX_PAGES = 20;
+const MAX_NEIGHBORS = 64;
 const text = (value) => typeof value === "string" ? value : "";
 const num = (value) => typeof value === "number" && Number.isFinite(value) ? value : void 0;
 const record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -63,6 +64,8 @@ function parseDevice(entry) {
 function parseClassicUplink(entry) {
   const uplink = record(record(entry).uplink);
   const last = record(record(entry).last_uplink);
+  const table = record(entry).lldp_table;
+  const neighbors = (Array.isArray(table) ? table.slice(0, MAX_NEIGHBORS) : []).map(record).filter((l) => l.is_wired === true && text(l.chassis_id) !== "").map((l) => ({ mac: text(l.chassis_id).toLowerCase(), port: num(l.local_port_idx) }));
   const parentMac = text(uplink.uplink_mac).toLowerCase();
   const lastParentMac = text(last.uplink_mac).toLowerCase();
   const type = uplink.type === "wire" ? "wired" : uplink.type === "wireless" ? "wireless" : void 0;
@@ -74,7 +77,9 @@ function parseClassicUplink(entry) {
       maxSpeedMbps: void 0,
       signalDbm: num(uplink.signal),
       parentMac,
-      lastParentMac
+      lastParentMac,
+      remotePort: void 0,
+      neighbors
     };
   }
   return {
@@ -83,7 +88,9 @@ function parseClassicUplink(entry) {
     maxSpeedMbps: num(uplink.max_speed),
     signalDbm: void 0,
     parentMac,
-    lastParentMac
+    lastParentMac,
+    remotePort: type === "wired" ? num(uplink.uplink_remote_port) : void 0,
+    neighbors
   };
 }
 class UnifiClient {

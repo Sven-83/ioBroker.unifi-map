@@ -270,6 +270,10 @@ class UnifiMap extends utils.Adapter {
                 clients: this.clients.get(device.id) ?? 0,
                 classicParentId: uplink?.parentMac ? idByMac.get(uplink.parentMac) : undefined,
                 classicLastParentId: uplink?.lastParentMac ? idByMac.get(uplink.lastParentMac) : undefined,
+                neighbors: (uplink?.neighbors ?? []).flatMap(n => {
+                    const id = idByMac.get(n.mac);
+                    return id ? [{ id, port: n.port }] : [];
+                }),
             });
         });
         const topology = buildTopology(statuses, this.lastUplinks);

@@ -41,7 +41,7 @@ function roleOf(device, details) {
   return "other";
 }
 function deviceStatus(input) {
-  var _a;
+  var _a, _b;
   const { device, details, statistics, uplink } = input;
   const online = device.state === "ONLINE";
   const role = roleOf(device, details);
@@ -67,7 +67,9 @@ function deviceStatus(input) {
     signalDbm: uplink == null ? void 0 : uplink.signalDbm,
     degraded: slow,
     degradedReason: slow ? `uplink ${uplink.speedMbps} of ${uplink.maxSpeedMbps} Mbit/s` : "",
-    clients: input.clients
+    clients: input.clients,
+    uplinkPort: uplink == null ? void 0 : uplink.remotePort,
+    neighbors: (_b = input.neighbors) != null ? _b : []
   };
 }
 function summarize(devices, stale) {

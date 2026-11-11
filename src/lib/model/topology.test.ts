@@ -29,6 +29,8 @@ function dev(
         degraded: false,
         degradedReason: '',
         clients: 0,
+        uplinkPort: undefined,
+        neighbors: [],
         ...overrides,
     };
 }
@@ -37,7 +39,7 @@ const off = { state: 'OFFLINE', uplinkId: '' } as const;
 /**
  * console -> switchA -> apCable; console ~mesh~ apMesh -> switchB
  *
- * @param changes
+ * @param changes - Overrides per device
  */
 function network(changes: Record<string, Partial<DeviceStatus>> = {}): DeviceStatus[] {
     return [
@@ -169,6 +171,67 @@ describe('model/topology', () => {
         expect(t.edges.find(e => e.to === 'unknown-switch-1')).to.include({ from: 'console', type: '' });
         expect(t.edges.find(e => e.to === 'apX')).to.include({ from: 'unknown-switch-1', speed: 100 });
         expect(t.nodes.filter(n => !n.virtual)).to.have.length(7);
+    });
+
+    it('hangs the placeholder below the device that all members see through LLDP (powerline)', () => {
+        // like the real network: two access points on powerline adapters, plugged into port 4 of switchB,
+        // which sits behind a mesh access point; LLDP passes the adapters, so each sees the other and switchB
+        const seen = (...ids: string[]): Partial<DeviceStatus> => ({
+            neighbors: ids.map(id => ({ id, port: 1 })),
+        });
+        const devices = [
+            ...network({
+                switchB: {
+                    neighbors: [
+                        { id: 'apMesh', port: 1 },
+                        { id: 'apY', port: 4 },
+                    ],
+                },
+            }),
+            dev('apX', 'accessPoint', 'apY', { linkSpeed: 100, uplinkPort: 1, ...seen('apY', 'switchB') }),
+            dev('apY', 'accessPoint', 'apX', { uplinkPort: 1, ...seen('apX', 'switchB') }),
+        ];
+        const t = buildTopology(devices, new Map());
+        expect(node(t, 'unknown-switch-1')).to.include({ uplinkId: 'switchB', depth: 3, virtual: true });
+        expect(node(t, 'apX')).to.include({ uplinkId: 'unknown-switch-1', depth: 4 });
+        expect(t.edges.find(e => e.to === 'unknown-switch-1')).to.include({ from: 'switchB', port: 4, type: '' });
+        // the port reported behind the section belongs to the other member, so it is not shown
+        expect(t.edges.find(e => e.to === 'apX')).to.include({ port: null, speed: 100 });
+        expect(t.edges.find(e => e.to === 'switchB')?.port).to.equal(null);
+    });
+
+    it('keeps the placeholder below the console when LLDP gives no single answer', () => {
+        const both = {
+            neighbors: [
+                { id: 'switchA', port: 1 },
+                { id: 'switchB', port: 1 },
+            ],
+        };
+        const t = buildTopology(
+            [...network(), dev('apX', 'accessPoint', 'apY', both), dev('apY', 'accessPoint', 'apX', both)],
+            new Map(),
+        );
+        expect(node(t, 'unknown-switch-1')).to.include({ uplinkId: 'console', depth: 1 });
+        expect(t.edges.find(e => e.to === 'unknown-switch-1')?.port).to.equal(null);
+    });
+
+    it('never hangs a placeholder below a device behind itself', () => {
+        const t = buildTopology(
+            [
+                dev('console', 'gateway', ''),
+                dev('apX', 'accessPoint', 'apY', { neighbors: [{ id: 'sw', port: 1 }] }),
+                dev('apY', 'accessPoint', 'apX', { neighbors: [{ id: 'sw', port: 1 }] }),
+                dev('sw', 'switch', 'apX'),
+            ],
+            new Map(),
+        );
+        expect(node(t, 'unknown-switch-1')).to.include({ uplinkId: 'console', depth: 1 });
+        expect(node(t, 'sw')).to.include({ uplinkId: 'apX', depth: 3 });
+    });
+
+    it('shows the parent port of cable links', () => {
+        const t = buildTopology(network({ apCable: { uplinkPort: 3 } }), new Map());
+        expect(t.edges.find(e => e.to === 'apCable')?.port).to.equal(3);
     });
 
     it('marks a device behind a failed member of such a group as consequence of that member', () => {
