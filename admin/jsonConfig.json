@@ -1,0 +1,127 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "_headerConsole": {
+            "type": "header",
+            "text": "UniFi console",
+            "size": 2
+        },
+        "host": {
+            "type": "text",
+            "label": "Address of the console",
+            "help": "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://",
+            "validator": "/^[A-Za-z0-9.:\\-\\[\\]]+$/.test((data.host || '').trim())",
+            "validatorErrorText": "Please enter the address of the console",
+            "validatorNoSaveOnError": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "port": {
+            "type": "number",
+            "label": "Port",
+            "min": 1,
+            "max": 65535,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 2,
+            "xl": 2
+        },
+        "apiKey": {
+            "type": "password",
+            "label": "API key",
+            "help": "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.",
+            "validator": "(data.apiKey || '').trim().length >= 8",
+            "validatorErrorText": "Please enter the API key",
+            "validatorNoSaveOnError": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "_headerCertificate": {
+            "type": "header",
+            "text": "Certificate",
+            "size": 2,
+            "newLine": true
+        },
+        "_certificateHelp": {
+            "type": "staticText",
+            "text": "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
+        },
+        "_fetchCertificate": {
+            "type": "sendTo",
+            "command": "fetchCertificate",
+            "label": "Fetch certificate",
+            "jsonData": "{\"host\":\"${data.host}\",\"port\":\"${data.port}\"}",
+            "useNative": true,
+            "showProcess": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "certFingerprint": {
+            "type": "text",
+            "label": "Confirmed fingerprint (SHA-256)",
+            "readOnly": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 8,
+            "xl": 8
+        },
+        "certificate": {
+            "type": "text",
+            "label": "Certificate",
+            "hidden": "true"
+        },
+        "_headerPolling": {
+            "type": "header",
+            "text": "Polling",
+            "size": 2,
+            "newLine": true
+        },
+        "pollInterval": {
+            "type": "number",
+            "label": "Device list every",
+            "help": "Seconds, 30 to 3600",
+            "min": 30,
+            "max": 3600,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "detailInterval": {
+            "type": "number",
+            "label": "Details, clients and uplinks every",
+            "help": "Seconds, 60 to 3600; also at once when a device changes its state",
+            "min": 60,
+            "max": 3600,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        }
+    }
+}

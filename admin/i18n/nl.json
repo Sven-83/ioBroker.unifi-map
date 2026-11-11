@@ -1,0 +1,20 @@
+{
+    "unifi-map adapter settings": "Adapterinstellingen voor unifi-map",
+    "UniFi console": "UniFi-console",
+    "Address of the console": "Adres van de console",
+    "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://": "IP-adres of hostnaam van de UniFi-console (bijv. UDR, UDM, UCG), zonder https://",
+    "Please enter the address of the console": "Voer het adres van de console in",
+    "Port": "Poort",
+    "API key": "API-sleutel",
+    "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Maak deze in UniFi aan onder Instellingen > Control Plane > Integraties, voor een lokale gebruiker met een alleen-lezen rol. Hij wordt versleuteld opgeslagen.",
+    "Please enter the API key": "Voer de API-sleutel in",
+    "Certificate": "Certificaat",
+    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "De console gebruikt een zelfondertekend certificaat. Haal het op, vergelijk de vingerafdruk met die van uw browser voor de console en sla op. Daarna wordt alleen dit certificaat geaccepteerd.",
+    "Fetch certificate": "Certificaat ophalen",
+    "Confirmed fingerprint (SHA-256)": "Bevestigde vingerafdruk (SHA-256)",
+    "Polling": "Opvragen",
+    "Device list every": "Apparatenlijst elke",
+    "Seconds, 30 to 3600": "Seconden, 30 tot 3600",
+    "Details, clients and uplinks every": "Details, clients en uplinks elke",
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Seconden, 60 tot 3600; daarnaast meteen wanneer een apparaat van status verandert"
+}

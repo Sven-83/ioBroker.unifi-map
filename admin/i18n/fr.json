@@ -1,0 +1,20 @@
+{
+    "unifi-map adapter settings": "Paramètres de l'adaptateur unifi-map",
+    "UniFi console": "Console UniFi",
+    "Address of the console": "Adresse de la console",
+    "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://": "Adresse IP ou nom d'hôte de la console UniFi (p. ex. UDR, UDM, UCG), sans https://",
+    "Please enter the address of the console": "Veuillez saisir l'adresse de la console",
+    "Port": "Port",
+    "API key": "Clé d'API",
+    "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "À créer dans UniFi sous Paramètres > Control Plane > Intégrations, pour un utilisateur local avec un rôle en lecture seule. Elle est stockée chiffrée.",
+    "Please enter the API key": "Veuillez saisir la clé d'API",
+    "Certificate": "Certificat",
+    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "La console utilise un certificat auto-signé. Récupérez-le, comparez l'empreinte avec celle que votre navigateur affiche pour la console, puis enregistrez. Ensuite, seul ce certificat est accepté.",
+    "Fetch certificate": "Récupérer le certificat",
+    "Confirmed fingerprint (SHA-256)": "Empreinte confirmée (SHA-256)",
+    "Polling": "Interrogation",
+    "Device list every": "Liste des appareils toutes les",
+    "Seconds, 30 to 3600": "Secondes, de 30 à 3600",
+    "Details, clients and uplinks every": "Détails, clients et liaisons montantes toutes les",
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Secondes, de 60 à 3600 ; en plus immédiatement quand un appareil change d'état"
+}

@@ -1,0 +1,20 @@
+{
+    "unifi-map adapter settings": "unifi-map adapter settings",
+    "UniFi console": "UniFi console",
+    "Address of the console": "Address of the console",
+    "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://": "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://",
+    "Please enter the address of the console": "Please enter the address of the console",
+    "Port": "Port",
+    "API key": "API key",
+    "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.",
+    "Please enter the API key": "Please enter the API key",
+    "Certificate": "Certificate",
+    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.",
+    "Fetch certificate": "Fetch certificate",
+    "Confirmed fingerprint (SHA-256)": "Confirmed fingerprint (SHA-256)",
+    "Polling": "Polling",
+    "Device list every": "Device list every",
+    "Seconds, 30 to 3600": "Seconds, 30 to 3600",
+    "Details, clients and uplinks every": "Details, clients and uplinks every",
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Seconds, 60 to 3600; also at once when a device changes its state"
+}

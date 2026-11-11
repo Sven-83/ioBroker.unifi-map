@@ -1,0 +1,20 @@
+{
+    "unifi-map adapter settings": "Налаштування адаптера unifi-map",
+    "UniFi console": "Консоль UniFi",
+    "Address of the console": "Адреса консолі",
+    "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://": "IP-адреса або ім’я хоста консолі UniFi (наприклад, UDR, UDM, UCG), без https://",
+    "Please enter the address of the console": "Введіть адресу консолі",
+    "Port": "Порт",
+    "API key": "API-ключ",
+    "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Створіть його в UniFi у розділі «Налаштування > Control Plane > Інтеграції» для локального користувача з роллю лише для читання. Він зберігається в зашифрованому вигляді.",
+    "Please enter the API key": "Введіть API-ключ",
+    "Certificate": "Сертифікат",
+    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "Консоль використовує самопідписаний сертифікат. Отримайте його, порівняйте відбиток із тим, що показує браузер для консолі, і збережіть. Після цього приймається лише цей сертифікат.",
+    "Fetch certificate": "Отримати сертифікат",
+    "Confirmed fingerprint (SHA-256)": "Підтверджений відбиток (SHA-256)",
+    "Polling": "Опитування",
+    "Device list every": "Список пристроїв кожні",
+    "Seconds, 30 to 3600": "Секунди, від 30 до 3600",
+    "Details, clients and uplinks every": "Подробиці, клієнти та аплінки кожні",
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Секунди, від 60 до 3600; додатково одразу, коли пристрій змінює стан"
+}

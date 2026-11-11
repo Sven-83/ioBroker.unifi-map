@@ -1,0 +1,20 @@
+{
+    "unifi-map adapter settings": "unifi-map 适配器设置",
+    "UniFi console": "UniFi 控制台",
+    "Address of the console": "控制台地址",
+    "IP address or host name of the UniFi console (e.g. UDR, UDM, UCG), without https://": "UniFi 控制台的 IP 地址或主机名（例如 UDR、UDM、UCG），不带 https://",
+    "Please enter the address of the console": "请输入控制台地址",
+    "Port": "端口",
+    "API key": "API 密钥",
+    "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "在 UniFi 的“设置 > Control Plane > 集成”中为具有只读角色的本地用户创建。密钥以加密方式保存。",
+    "Please enter the API key": "请输入 API 密钥",
+    "Certificate": "证书",
+    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "控制台使用自签名证书。获取证书，将指纹与浏览器为控制台显示的指纹进行比较，然后保存。之后只接受此证书。",
+    "Fetch certificate": "获取证书",
+    "Confirmed fingerprint (SHA-256)": "已确认的指纹 (SHA-256)",
+    "Polling": "轮询",
+    "Device list every": "设备列表间隔",
+    "Seconds, 30 to 3600": "秒，30 到 3600",
+    "Details, clients and uplinks every": "详细信息、客户端和上行链路间隔",
+    "Seconds, 60 to 3600; also at once when a device changes its state": "秒，60 到 3600；设备状态变化时也会立即读取"
+}

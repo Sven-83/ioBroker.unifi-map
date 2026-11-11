@@ -1,0 +1,195 @@
+{
+    "common": {
+        "name": "unifi-map",
+        "version": "0.1.0",
+        "news": {
+            "0.1.0": {
+                "en": "Device status, restarts and slow uplinks of a UniFi network",
+                "de": "Gerätestatus, Neustarts und langsame Uplinks eines UniFi-Netzwerks",
+                "ru": "Состояние устройств, перезапуски и медленные аплинки сети UniFi",
+                "pt": "Estado dos dispositivos, reinícios e uplinks lentos de uma rede UniFi",
+                "nl": "Apparaatstatus, herstarts en trage uplinks van een UniFi-netwerk",
+                "fr": "État des appareils, redémarrages et liaisons montantes lentes d'un réseau UniFi",
+                "it": "Stato dei dispositivi, riavvii e uplink lenti di una rete UniFi",
+                "es": "Estado de los dispositivos, reinicios y enlaces ascendentes lentos de una red UniFi",
+                "pl": "Stan urządzeń, ponowne uruchomienia i wolne łącza w sieci UniFi",
+                "uk": "Стан пристроїв, перезапуски та повільні аплінки мережі UniFi",
+                "zh-cn": "UniFi 网络的设备状态、重启和慢速上行链路"
+            }
+        },
+        "titleLang": {
+            "en": "UniFi map",
+            "de": "UniFi-Karte",
+            "ru": "Карта UniFi",
+            "pt": "Mapa UniFi",
+            "nl": "UniFi-kaart",
+            "fr": "Carte UniFi",
+            "it": "Mappa UniFi",
+            "es": "Mapa UniFi",
+            "pl": "Mapa UniFi",
+            "uk": "Карта UniFi",
+            "zh-cn": "UniFi 地图"
+        },
+        "desc": {
+            "en": "Status of UniFi devices, topology map and firmware updates",
+            "de": "Status der UniFi-Geräte, Topologie-Karte und Firmware-Updates",
+            "ru": "Состояние устройств UniFi, карта топологии и обновления прошивки",
+            "pt": "Estado dos dispositivos UniFi, mapa de topologia e atualizações de firmware",
+            "nl": "Status van UniFi-apparaten, topologiekaart en firmware-updates",
+            "fr": "État des appareils UniFi, carte de topologie et mises à jour du micrologiciel",
+            "it": "Stato dei dispositivi UniFi, mappa della topologia e aggiornamenti firmware",
+            "es": "Estado de los dispositivos UniFi, mapa de topología y actualizaciones de firmware",
+            "pl": "Stan urządzeń UniFi, mapa topologii i aktualizacje oprogramowania",
+            "uk": "Стан пристроїв UniFi, карта топології та оновлення прошивки",
+            "zh-cn": "UniFi 设备状态、拓扑图和固件更新"
+        },
+        "authors": ["Sven-83 <276080681+Sven-83@users.noreply.github.com>"],
+        "keywords": ["unifi", "network", "topology", "firmware", "access point"],
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "unifi-map.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/Sven-83/ioBroker.unifi-map/main/admin/unifi-map.png",
+        "readme": "https://github.com/Sven-83/ioBroker.unifi-map/blob/main/README.md",
+        "loglevel": "info",
+        "tier": 2,
+        "mode": "daemon",
+        "type": "network",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "messagebox": true,
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=6.0.11"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=7.6.20"
+            }
+        ]
+    },
+    "native": {
+        "host": "",
+        "port": 443,
+        "apiKey": "",
+        "certificate": "",
+        "certFingerprint": "",
+        "pollInterval": 60,
+        "detailInterval": 300
+    },
+    "encryptedNative": ["apiKey"],
+    "protectedNative": ["apiKey"],
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": { "name": "Information" },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Console reachable",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.lastUpdate",
+            "type": "state",
+            "common": {
+                "role": "value.time",
+                "name": "Time of the last successful poll",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": 0
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.dataStale",
+            "type": "state",
+            "common": {
+                "role": "indicator",
+                "name": "Data older than 3 intervals",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": true
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.networkVersion",
+            "type": "state",
+            "common": {
+                "role": "text",
+                "name": "Version of the UniFi Network application",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.restarts",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": "Start times of the devices (internal)",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": "{}"
+            },
+            "native": {}
+        },
+        {
+            "_id": "events",
+            "type": "channel",
+            "common": { "name": "Events" },
+            "native": {}
+        },
+        {
+            "_id": "events.last",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": "Last event (offline, online, restart, degraded, recovered)",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "refresh",
+            "type": "state",
+            "common": {
+                "role": "button",
+                "name": "Read everything now (at most every 10 s)",
+                "type": "boolean",
+                "read": false,
+                "write": true
+            },
+            "native": {}
+        }
+    ]
+}
