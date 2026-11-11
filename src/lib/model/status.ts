@@ -90,8 +90,10 @@ export interface DeviceInput {
     uplink?: ClassicUplink;
     /** Number of clients */
     clients?: number;
-    /** Parent found through the classic list (current or last uplink), used when the details have none */
+    /** Parent found through the classic list, used when the details have none */
     classicParentId?: string;
+    /** Last known parent of the classic list, used only while the device is not online */
+    classicLastParentId?: string;
 }
 
 /**
@@ -144,7 +146,11 @@ export function deviceStatus(input: DeviceInput): DeviceStatus {
         firmware: device.firmware,
         updatable: device.updatable,
         uptimeSec: online ? statistics?.uptimeSec : undefined,
-        uplinkId: details?.uplinkDeviceId || input.classicParentId || '',
+        // the console is the root: what the classic list reports as its uplink is the internet line or history
+        uplinkId:
+            role === 'gateway'
+                ? ''
+                : details?.uplinkDeviceId || input.classicParentId || (online ? '' : input.classicLastParentId) || '',
         uplinkType: uplink?.type ?? '',
         linkSpeed: uplink?.speedMbps,
         linkMaxSpeed: uplink?.maxSpeedMbps,

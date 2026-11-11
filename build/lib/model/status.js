@@ -59,7 +59,8 @@ function deviceStatus(input) {
     firmware: device.firmware,
     updatable: device.updatable,
     uptimeSec: online ? statistics == null ? void 0 : statistics.uptimeSec : void 0,
-    uplinkId: (details == null ? void 0 : details.uplinkDeviceId) || input.classicParentId || "",
+    // the console is the root: what the classic list reports as its uplink is the internet line or history
+    uplinkId: role === "gateway" ? "" : (details == null ? void 0 : details.uplinkDeviceId) || input.classicParentId || (online ? "" : input.classicLastParentId) || "",
     uplinkType: (_a = uplink == null ? void 0 : uplink.type) != null ? _a : "",
     linkSpeed: uplink == null ? void 0 : uplink.speedMbps,
     linkMaxSpeed: uplink == null ? void 0 : uplink.maxSpeedMbps,

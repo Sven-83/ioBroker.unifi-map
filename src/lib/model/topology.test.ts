@@ -129,13 +129,60 @@ describe('model/topology', () => {
         expect(node(t, 'apMesh')).to.include({ state: 'offline', depth: -1, uplinkId: '' });
     });
 
-    it('does not hang on a loop in broken data', () => {
+    it('resolves a circle of three and keeps a device that only points into it', () => {
         const t = buildTopology(
-            [dev('console', 'gateway', ''), dev('a', 'switch', 'b'), dev('b', 'switch', 'a')],
+            [
+                dev('console', 'gateway', ''),
+                dev('a', 'switch', 'b'),
+                dev('b', 'switch', 'c'),
+                dev('c', 'switch', 'a'),
+                dev('d', 'accessPoint', 'a'),
+            ],
             new Map(),
         );
-        expect(node(t, 'a').depth).to.equal(-1);
-        expect(node(t, 'b').depth).to.equal(-1);
+        expect(['a', 'b', 'c'].map(id => node(t, id).uplinkId)).to.deep.equal(Array(3).fill('unknown-switch-1'));
+        expect(node(t, 'd')).to.include({ uplinkId: 'a', depth: 3 });
+        expect(t.nodes.filter(n => n.virtual)).to.have.length(1);
+    });
+
+    it('leaves a device without any known parent unconnected', () => {
+        const t = buildTopology([dev('console', 'gateway', ''), dev('lost', 'switch', 'nobody')], new Map());
+        expect(node(t, 'lost')).to.include({ depth: -1, uplinkId: '' });
+    });
+
+    it('puts devices that point at each other below a placeholder for a switch that is not UniFi', () => {
+        // two access points on a simple switch see each other as parent (LLDP passes the simple switch)
+        const t = buildTopology(
+            [...network(), dev('apX', 'accessPoint', 'apY', { linkSpeed: 100 }), dev('apY', 'accessPoint', 'apX')],
+            new Map(),
+        );
+        const placeholder = t.nodes.find(n => n.virtual)!;
+        expect(placeholder).to.include({
+            id: 'unknown-switch-1',
+            role: 'unknownSwitch',
+            uplinkId: 'console',
+            depth: 1,
+            state: 'ok',
+        });
+        expect(node(t, 'apX')).to.include({ uplinkId: 'unknown-switch-1', depth: 2, state: 'ok' });
+        expect(node(t, 'apY')).to.include({ uplinkId: 'unknown-switch-1', depth: 2 });
+        expect(t.edges.find(e => e.to === 'unknown-switch-1')).to.include({ from: 'console', type: '' });
+        expect(t.edges.find(e => e.to === 'apX')).to.include({ from: 'unknown-switch-1', speed: 100 });
+        expect(t.nodes.filter(n => !n.virtual)).to.have.length(7);
+    });
+
+    it('marks a device behind a failed member of such a group as consequence of that member', () => {
+        const t = buildTopology(
+            [
+                ...network(),
+                dev('apX', 'accessPoint', 'apY', { state: 'OFFLINE' }),
+                dev('apY', 'accessPoint', 'apX'),
+                dev('behindX', 'switch', '', { state: 'OFFLINE' }),
+            ],
+            new Map([['behindX', 'apX']]),
+        );
+        expect(node(t, 'apX').state).to.equal('offline');
+        expect(node(t, 'behindX')).to.include({ state: 'consequence', causeId: 'apX', depth: 3 });
     });
 
     it('never gives the console a remembered parent', () => {

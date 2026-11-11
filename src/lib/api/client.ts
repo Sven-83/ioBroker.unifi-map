@@ -64,8 +64,10 @@ export interface ClassicUplink {
     maxSpeedMbps: number | undefined;
     /** Signal in dBm (mesh only) */
     signalDbm: number | undefined;
-    /** MAC of the parent device: the current one, otherwise the last known one (also for offline devices) */
+    /** MAC of the current parent device, empty if none is reported */
     parentMac: string;
+    /** MAC of the last known parent; only meaningful for a device that is not online (history otherwise) */
+    lastParentMac: string;
 }
 
 /** Site of the console */
@@ -128,7 +130,8 @@ export function parseDevice(entry: unknown): UnifiDevice | undefined {
 export function parseClassicUplink(entry: unknown): ClassicUplink {
     const uplink = record(record(entry).uplink);
     const last = record(record(entry).last_uplink);
-    const parentMac = (text(uplink.uplink_mac) || text(last.uplink_mac)).toLowerCase();
+    const parentMac = text(uplink.uplink_mac).toLowerCase();
+    const lastParentMac = text(last.uplink_mac).toLowerCase();
     const type = uplink.type === 'wire' ? 'wired' : uplink.type === 'wireless' ? 'wireless' : undefined;
     if (type === 'wireless') {
         // tx_rate is reported in kbit/s
@@ -139,6 +142,7 @@ export function parseClassicUplink(entry: unknown): ClassicUplink {
             maxSpeedMbps: undefined,
             signalDbm: num(uplink.signal),
             parentMac,
+            lastParentMac,
         };
     }
     return {
@@ -147,6 +151,7 @@ export function parseClassicUplink(entry: unknown): ClassicUplink {
         maxSpeedMbps: num(uplink.max_speed),
         signalDbm: undefined,
         parentMac,
+        lastParentMac,
     };
 }
 

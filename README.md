@@ -80,6 +80,9 @@ do not count as failures.
 - Uplinks are read with the details (default every 5 minutes, at once when a device changes its state): a mesh access
   point that moves without changing its state is noticed with the next details.
 - Failed devices report no uplink; the last known one is kept (also across adapter restarts) to find the cause.
+- Devices behind a switch that is not a UniFi device often point at each other as parent (simple switches pass the
+  discovery packets on). Such a circle is shown below a placeholder node `unknown-switch-<n>` (`virtual: true`,
+  role `unknownSwitch`) under the console; where exactly that switch is connected is unknown.
 - One site per console (the first one).
 
 ## Disclaimer

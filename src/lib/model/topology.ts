@@ -7,6 +7,10 @@
  * is simply online with a new uplink.
  *
  * Failed devices often report no uplink any more, so the last known uplink is kept.
+ *
+ * Devices that point at each other in a circle are connected through a switch that is not a UniFi device: simple
+ * switches pass the discovery packets (LLDP) on, so two access points behind one see each other as parent. They are
+ * put below a placeholder "unknown switch" under the console.
  */
 
 import type { DeviceStatus } from './status';
@@ -22,8 +26,10 @@ export interface TopologyNode {
     name: string;
     /** Model */
     model: string;
-    /** Role */
-    role: DeviceStatus['role'];
+    /** Role; unknownSwitch for the placeholder of a switch that is not a UniFi device */
+    role: DeviceStatus['role'] | 'unknownSwitch';
+    /** Placeholder, not a device of the console */
+    virtual: boolean;
     /** What the map shows */
     state: 'ok' | 'degraded' | 'offline' | 'consequence' | 'busy';
     /** Parent, empty for the console or if unknown */
@@ -87,6 +93,7 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
     };
     const parents = new Map(devices.map(d => [d.id, parentOf(d)]));
     const root = devices.find(d => d.role === 'gateway')?.id ?? '';
+    const placeholders = placeUnknownSwitches(devices, parents, root);
 
     // walks up to the console; returns depth and the nearest failed ancestor
     const walk = (id: string): { depth: number; cause: string } => {
@@ -109,33 +116,59 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
         return { depth, cause };
     };
 
-    const nodes: TopologyNode[] = devices.map(d => {
-        const { depth, cause } = walk(d.id);
-        const consequence = d.failed && cause !== '';
-        let state: TopologyNode['state'] = 'ok';
-        if (consequence) {
-            state = 'consequence';
-        } else if (d.failed) {
-            state = 'offline';
-        } else if (!d.online) {
-            state = 'busy';
-        } else if (d.degraded) {
-            state = 'degraded';
-        }
-        return {
-            id: d.id,
-            name: d.name,
-            model: d.model,
-            role: d.role,
-            state,
-            uplinkId: parents.get(d.id)?.id ?? '',
-            depth: d.id === root ? 0 : depth,
-            causeId: consequence ? rootCause(cause, parents, byId) : '',
-            updatable: d.updatable,
-        };
-    });
+    const nodes: TopologyNode[] = placeholders.map(id => ({
+        id,
+        name: '',
+        model: '',
+        role: 'unknownSwitch' as const,
+        state: 'ok' as const,
+        uplinkId: root,
+        depth: root ? 1 : -1,
+        causeId: '',
+        updatable: false,
+        virtual: true,
+    }));
+    nodes.push(
+        ...devices.map(d => {
+            const { depth, cause } = walk(d.id);
+            const consequence = d.failed && cause !== '';
+            let state: TopologyNode['state'] = 'ok';
+            if (consequence) {
+                state = 'consequence';
+            } else if (d.failed) {
+                state = 'offline';
+            } else if (!d.online) {
+                state = 'busy';
+            } else if (d.degraded) {
+                state = 'degraded';
+            }
+            return {
+                id: d.id,
+                name: d.name,
+                model: d.model,
+                role: d.role,
+                state,
+                uplinkId: parents.get(d.id)?.id ?? '',
+                depth: d.id === root ? 0 : depth,
+                causeId: consequence ? rootCause(cause, parents, byId) : '',
+                updatable: d.updatable,
+                virtual: false,
+            };
+        }),
+    );
 
-    const edges: TopologyEdge[] = [];
+    const edges: TopologyEdge[] = placeholders
+        .filter(() => root)
+        .map(id => ({
+            from: root,
+            to: id,
+            type: '' as const,
+            speed: null,
+            maxSpeed: null,
+            signal: null,
+            degraded: false,
+            remembered: false,
+        }));
     for (const d of devices) {
         const parent = parents.get(d.id)!;
         if (!parent.id) {
@@ -153,6 +186,46 @@ export function buildTopology(devices: DeviceStatus[], lastUplinks: ReadonlyMap<
         });
     }
     return { rootId: root, nodes, edges };
+}
+
+/**
+ * Finds devices that point at each other in a circle and puts each circle below a placeholder for a switch that
+ * is not a UniFi device. Changes `parents` in place.
+ *
+ * @param devices - All devices
+ * @param parents - Parent per device
+ * @param root - Console
+ * @returns IDs of the placeholders
+ */
+function placeUnknownSwitches(
+    devices: DeviceStatus[],
+    parents: Map<string, { id: string; remembered: boolean }>,
+    root: string,
+): string[] {
+    const placeholders: string[] = [];
+    const done = new Set<string>();
+    for (const device of devices) {
+        const path: string[] = [];
+        const onPath = new Set<string>();
+        let current = device.id;
+        while (current && current !== root && !done.has(current) && !onPath.has(current)) {
+            path.push(current);
+            onPath.add(current);
+            current = parents.get(current)?.id ?? '';
+        }
+        if (current && onPath.has(current)) {
+            const id = `unknown-switch-${placeholders.length + 1}`;
+            for (const member of path.slice(path.indexOf(current))) {
+                parents.set(member, { id, remembered: parents.get(member)?.remembered ?? false });
+            }
+            parents.set(id, { id: root, remembered: false });
+            placeholders.push(id);
+        }
+        for (const id of path) {
+            done.add(id);
+        }
+    }
+    return placeholders;
 }
 
 /**

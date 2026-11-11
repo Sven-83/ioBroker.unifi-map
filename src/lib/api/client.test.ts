@@ -52,6 +52,7 @@ describe('api/client', () => {
                 maxSpeedMbps: 1000,
                 signalDbm: undefined,
                 parentMac: '',
+                lastParentMac: '',
             });
             expect(
                 parseClassicUplink({
@@ -63,15 +64,16 @@ describe('api/client', () => {
                 maxSpeedMbps: undefined,
                 signalDbm: -62,
                 parentMac: mac(1),
+                lastParentMac: '',
             });
             expect(parseClassicUplink({}).type).to.equal(undefined);
         });
 
-        it('takes the last known parent of a device that reports no uplink', () => {
-            expect(parseClassicUplink({ uplink: {}, last_uplink: { uplink_mac: mac(2) } }).parentMac).to.equal(mac(2));
-            expect(
-                parseClassicUplink({ uplink: { uplink_mac: mac(3) }, last_uplink: { uplink_mac: mac(2) } }).parentMac,
-            ).to.equal(mac(3));
+        it('keeps the current and the last known parent apart', () => {
+            const offline = parseClassicUplink({ uplink: {}, last_uplink: { uplink_mac: mac(2) } });
+            expect([offline.parentMac, offline.lastParentMac]).to.deep.equal(['', mac(2)]);
+            const online = parseClassicUplink({ uplink: { uplink_mac: mac(3) }, last_uplink: { uplink_mac: mac(2) } });
+            expect([online.parentMac, online.lastParentMac]).to.deep.equal([mac(3), mac(2)]);
         });
 
         it('reads Retry-After as seconds or date', () => {

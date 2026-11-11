@@ -22,6 +22,7 @@ const wired = (speed: number, max: number): ClassicUplink => ({
     maxSpeedMbps: max,
     signalDbm: undefined,
     parentMac: '',
+    lastParentMac: '',
 });
 const mesh: ClassicUplink = {
     type: 'wireless',
@@ -29,6 +30,7 @@ const mesh: ClassicUplink = {
     maxSpeedMbps: undefined,
     signalDbm: -62,
     parentMac: '',
+    lastParentMac: '',
 };
 const input = (overrides: Partial<DeviceInput> = {}): DeviceInput => ({
     device: device(),
@@ -94,6 +96,23 @@ describe('model/status', () => {
             const status = deviceStatus(input({ device: device({ state: 'OFFLINE' }), uplink: wired(100, 1000) }));
             expect(status.uptimeSec).to.equal(undefined);
             expect(status.degraded).to.equal(false);
+        });
+
+        it('never gives the console a parent, whatever the classic list reports', () => {
+            const console = input({
+                device: device({ features: ['switching', 'accessPoint'] }),
+                details: { uplinkDeviceId: undefined },
+                classicParentId: 'switch',
+                classicLastParentId: 'switch',
+            });
+            expect(deviceStatus(console).uplinkId).to.equal('');
+        });
+
+        it('uses the last known parent of the classic list only while the device is not online', () => {
+            const base = { details: { uplinkDeviceId: undefined }, classicLastParentId: 'old' };
+            expect(deviceStatus(input(base)).uplinkId, 'online: history is ignored').to.equal('');
+            expect(deviceStatus(input({ ...base, device: device({ state: 'OFFLINE' }) })).uplinkId).to.equal('old');
+            expect(deviceStatus(input({ ...base, classicParentId: 'now' })).uplinkId).to.equal('now');
         });
 
         it('works without details, statistics and uplink', () => {

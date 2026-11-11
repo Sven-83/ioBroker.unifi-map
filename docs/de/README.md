@@ -77,4 +77,8 @@ zählen nicht als Ausfall.
   der ohne Zustandsänderung umzieht, fällt mit den nächsten Details auf.
 - Ausgefallene Geräte melden keinen Uplink; der letzte bekannte wird behalten (auch über Adapter-Neustarts), um die
   Ursache zu finden.
+- Geräte hinter einem Switch, der kein UniFi-Gerät ist, zeigen oft gegenseitig aufeinander als Elterngerät (einfache
+  Switches reichen die Erkennungspakete durch). Ein solcher Kreis erscheint unter einem Platzhalter
+  `unknown-switch-<n>` (`virtual: true`, Rolle `unknownSwitch`) unter der Konsole; wo genau dieser Switch hängt, ist
+  unbekannt.
 - Eine Site je Konsole (die erste).

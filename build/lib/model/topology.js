@@ -39,6 +39,7 @@ function buildTopology(devices, lastUplinks) {
   };
   const parents = new Map(devices.map((d) => [d.id, parentOf(d)]));
   const root = (_b = (_a = devices.find((d) => d.role === "gateway")) == null ? void 0 : _a.id) != null ? _b : "";
+  const placeholders = placeUnknownSwitches(devices, parents, root);
   const walk = (id) => {
     var _a2, _b2, _c2;
     let depth = 0;
@@ -59,33 +60,57 @@ function buildTopology(devices, lastUplinks) {
     }
     return { depth, cause };
   };
-  const nodes = devices.map((d) => {
-    var _a2, _b2;
-    const { depth, cause } = walk(d.id);
-    const consequence = d.failed && cause !== "";
-    let state = "ok";
-    if (consequence) {
-      state = "consequence";
-    } else if (d.failed) {
-      state = "offline";
-    } else if (!d.online) {
-      state = "busy";
-    } else if (d.degraded) {
-      state = "degraded";
-    }
-    return {
-      id: d.id,
-      name: d.name,
-      model: d.model,
-      role: d.role,
-      state,
-      uplinkId: (_b2 = (_a2 = parents.get(d.id)) == null ? void 0 : _a2.id) != null ? _b2 : "",
-      depth: d.id === root ? 0 : depth,
-      causeId: consequence ? rootCause(cause, parents, byId) : "",
-      updatable: d.updatable
-    };
-  });
-  const edges = [];
+  const nodes = placeholders.map((id) => ({
+    id,
+    name: "",
+    model: "",
+    role: "unknownSwitch",
+    state: "ok",
+    uplinkId: root,
+    depth: root ? 1 : -1,
+    causeId: "",
+    updatable: false,
+    virtual: true
+  }));
+  nodes.push(
+    ...devices.map((d) => {
+      var _a2, _b2;
+      const { depth, cause } = walk(d.id);
+      const consequence = d.failed && cause !== "";
+      let state = "ok";
+      if (consequence) {
+        state = "consequence";
+      } else if (d.failed) {
+        state = "offline";
+      } else if (!d.online) {
+        state = "busy";
+      } else if (d.degraded) {
+        state = "degraded";
+      }
+      return {
+        id: d.id,
+        name: d.name,
+        model: d.model,
+        role: d.role,
+        state,
+        uplinkId: (_b2 = (_a2 = parents.get(d.id)) == null ? void 0 : _a2.id) != null ? _b2 : "",
+        depth: d.id === root ? 0 : depth,
+        causeId: consequence ? rootCause(cause, parents, byId) : "",
+        updatable: d.updatable,
+        virtual: false
+      };
+    })
+  );
+  const edges = placeholders.filter(() => root).map((id) => ({
+    from: root,
+    to: id,
+    type: "",
+    speed: null,
+    maxSpeed: null,
+    signal: null,
+    degraded: false,
+    remembered: false
+  }));
   for (const d of devices) {
     const parent = parents.get(d.id);
     if (!parent.id) {
@@ -103,6 +128,33 @@ function buildTopology(devices, lastUplinks) {
     });
   }
   return { rootId: root, nodes, edges };
+}
+function placeUnknownSwitches(devices, parents, root) {
+  var _a, _b, _c, _d;
+  const placeholders = [];
+  const done = /* @__PURE__ */ new Set();
+  for (const device of devices) {
+    const path = [];
+    const onPath = /* @__PURE__ */ new Set();
+    let current = device.id;
+    while (current && current !== root && !done.has(current) && !onPath.has(current)) {
+      path.push(current);
+      onPath.add(current);
+      current = (_b = (_a = parents.get(current)) == null ? void 0 : _a.id) != null ? _b : "";
+    }
+    if (current && onPath.has(current)) {
+      const id = `unknown-switch-${placeholders.length + 1}`;
+      for (const member of path.slice(path.indexOf(current))) {
+        parents.set(member, { id, remembered: (_d = (_c = parents.get(member)) == null ? void 0 : _c.remembered) != null ? _d : false });
+      }
+      parents.set(id, { id: root, remembered: false });
+      placeholders.push(id);
+    }
+    for (const id of path) {
+      done.add(id);
+    }
+  }
+  return placeholders;
 }
 function rootCause(start, parents, byId) {
   var _a, _b, _c;
