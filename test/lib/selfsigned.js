@@ -50,7 +50,8 @@ function selfSigned(commonName = 'unifi.test') {
     const ecdsaSha256 = seq(oid('1.2.840.10045.4.3.2'));
     const name = seq(set(seq(oid('2.5.4.3'), tlv(0x0c, Buffer.from(commonName)))));
     const serial = randomBytes(8);
-    serial[0] &= 0x7f;
+    // positive and without a leading zero byte: DER forbids that padding, OpenSSL then rejects the certificate
+    serial[0] = (serial[0] & 0x3f) | 0x40;
     const now = Date.now();
     const tbs = seq(
         tlv(0xa0, tlv(0x02, Buffer.from([2]))), // version 3
