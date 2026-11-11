@@ -84,9 +84,16 @@ class UnifiMap extends utils.Adapter {
     const host = (0, import_config.consoleHost)(this.config.host);
     const key = (0, import_config.apiKey)(this.config.apiKey);
     const certificate = (0, import_certificate.parseCertificate)(this.config.certificate);
-    if (!host || !key || !certificate) {
-      const missing = [!host && "address", !key && "API key", !certificate && "confirmed certificate"].filter(Boolean).join(", ");
-      this.log.warn(`Not configured: ${missing} missing. Fill in the instance settings.`);
+    const shown = typeof this.config.certFingerprint === "string" ? this.config.certFingerprint.trim() : "";
+    let certificateProblem = "";
+    if (!certificate) {
+      certificateProblem = this.config.certificate ? "the stored certificate cannot be read - fetch it again" : "confirmed certificate missing - fetch it";
+    } else if (shown && shown !== certificate.fingerprint) {
+      certificateProblem = "the fingerprint in the settings does not match the stored certificate - fetch it again";
+    }
+    if (!host || !key || !certificate || certificateProblem) {
+      const problems = [!host && "address missing", !key && "API key missing", certificateProblem].filter(Boolean).join(", ");
+      this.log.warn(`Not configured: ${problems}. Fill in the instance settings and save.`);
       return;
     }
     const http = new import_http.UnifiHttp({
@@ -379,6 +386,7 @@ class UnifiMap extends utils.Adapter {
         this.log.info("Certificate of the console fetched - compare the fingerprint and save to confirm it");
       } catch (err) {
         answer = { error: `Certificate not fetched: ${(0, import_errors.describeError)(err)}` };
+        this.log.warn(`Certificate of the console not fetched: ${(0, import_errors.describeError)(err)}`);
       }
     }
     this.sendTo(obj.from, obj.command, answer, obj.callback);

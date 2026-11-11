@@ -112,6 +112,15 @@ describe('api/client', () => {
             expect(fake.stats.requests).to.equal(before);
         });
 
+        it('reads a stored certificate also without line breaks or with spaces (admin text field)', () => {
+            const flat = fake.certificate.replace(/\n/g, '');
+            const spaced = fake.certificate.replace(/\n/g, ' ');
+            const crlf = fake.certificate.replace(/\n/g, '\r\n');
+            for (const text of [fake.certificate, flat, spaced, crlf]) {
+                expect(parseCertificate(text)?.fingerprint).to.equal(fake.fingerprint);
+            }
+        });
+
         it('reads version, site, devices, details, statistics, clients and uplinks', async () => {
             const c = client();
             expect(await c.networkVersion()).to.equal('10.6.109');

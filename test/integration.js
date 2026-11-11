@@ -85,7 +85,7 @@ tests.integration(path.join(__dirname, '..'), {
                 const harness = getHarness();
                 await harness.changeAdapterConfig('unifi-map', { native: { host: '', apiKey: '', certificate: '' } });
                 await harness.startAdapterAndWait();
-                await waitFor(() => harness.hasLog(/Not configured: address, API key, confirmed certificate missing/, 'warn'), 'warning');
+                await waitFor(() => harness.hasLog(/Not configured: address missing, API key missing, confirmed certificate missing - fetch it/, 'warn'), 'warning');
                 expect(await stateVal(harness, 'info.connection')).to.equal(false);
             });
         });
@@ -232,13 +232,20 @@ tests.integration(path.join(__dirname, '..'), {
                 harness = getHarness();
                 fake = await startFakeConsole();
                 fake.config.classicStatus = 404;
-                await harness.changeAdapterConfig('unifi-map', { native: configOf(fake) });
+                // stored like the admin text field does it on a real host: without line breaks
+                const flat = { ...configOf(fake), certificate: fake.certificate.replace(/\n/g, '') };
+                await harness.changeAdapterConfig('unifi-map', { native: flat });
                 await harness.startAdapterAndWait();
                 await waitFor(async () => (await stateVal(harness, 'summary.total')) === 5, 'summary');
             });
 
             after(async () => {
                 await fake?.close();
+            });
+
+            it('accepts a stored certificate without line breaks', async () => {
+                expect(await stateVal(harness, 'info.connection')).to.equal(true);
+                expect(harness.hasLog(/Not configured/, 'warn')).to.equal(false);
             });
 
             it('keeps the status working and warns once', async () => {

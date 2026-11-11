@@ -101,11 +101,22 @@ class UnifiMap extends utils.Adapter {
         const host = consoleHost(this.config.host);
         const key = apiKey(this.config.apiKey);
         const certificate = parseCertificate(this.config.certificate);
-        if (!host || !key || !certificate) {
-            const missing = [!host && 'address', !key && 'API key', !certificate && 'confirmed certificate']
+        const shown = typeof this.config.certFingerprint === 'string' ? this.config.certFingerprint.trim() : '';
+        let certificateProblem = '';
+        if (!certificate) {
+            certificateProblem = this.config.certificate
+                ? 'the stored certificate cannot be read - fetch it again'
+                : 'confirmed certificate missing - fetch it';
+        } else if (shown && shown !== certificate.fingerprint) {
+            // the user confirmed what the form showed: both must belong together
+            certificateProblem =
+                'the fingerprint in the settings does not match the stored certificate - fetch it again';
+        }
+        if (!host || !key || !certificate || certificateProblem) {
+            const problems = [!host && 'address missing', !key && 'API key missing', certificateProblem]
                 .filter(Boolean)
                 .join(', ');
-            this.log.warn(`Not configured: ${missing} missing. Fill in the instance settings.`);
+            this.log.warn(`Not configured: ${problems}. Fill in the instance settings and save.`);
             return;
         }
 
@@ -411,6 +422,7 @@ class UnifiMap extends utils.Adapter {
                 this.log.info('Certificate of the console fetched - compare the fingerprint and save to confirm it');
             } catch (err) {
                 answer = { error: `Certificate not fetched: ${describeError(err)}` };
+                this.log.warn(`Certificate of the console not fetched: ${describeError(err)}`);
             }
         }
         this.sendTo(obj.from, obj.command, answer, obj.callback);

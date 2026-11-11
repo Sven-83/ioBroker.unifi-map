@@ -31,14 +31,20 @@ export function toPem(raw: Buffer): string {
 }
 
 /**
- * Reads a stored PEM. Returns undefined if it is not a certificate.
+ * Reads a stored PEM. Text fields of the admin may drop the line breaks or add spaces, so only the base64 part
+ * between the markers is used and the PEM is built again. Returns undefined if it is not a certificate.
  *
- * @param pem - Stored text
+ * @param text - Stored text
  */
-export function parseCertificate(pem: unknown): ConsoleCertificate | undefined {
-    if (typeof pem !== 'string' || !pem.includes('BEGIN CERTIFICATE')) {
+export function parseCertificate(text: unknown): ConsoleCertificate | undefined {
+    if (typeof text !== 'string') {
         return undefined;
     }
+    const body = /-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/.exec(text)?.[1].replace(/\s+/g, '');
+    if (!body || !/^[A-Za-z0-9+/]+=*$/.test(body)) {
+        return undefined;
+    }
+    const pem = toPem(Buffer.from(body, 'base64'));
     try {
         const cert = new X509Certificate(pem);
         return {

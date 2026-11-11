@@ -34,17 +34,22 @@ ${lines.join("\n")}
 -----END CERTIFICATE-----
 `;
 }
-function parseCertificate(pem) {
-  var _a, _b;
-  if (typeof pem !== "string" || !pem.includes("BEGIN CERTIFICATE")) {
+function parseCertificate(text) {
+  var _a, _b, _c;
+  if (typeof text !== "string") {
     return void 0;
   }
+  const body = (_a = /-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/.exec(text)) == null ? void 0 : _a[1].replace(/\s+/g, "");
+  if (!body || !/^[A-Za-z0-9+/]+=*$/.test(body)) {
+    return void 0;
+  }
+  const pem = toPem(Buffer.from(body, "base64"));
   try {
     const cert = new import_node_crypto.X509Certificate(pem);
     return {
       pem,
       fingerprint: cert.fingerprint256,
-      subject: (_b = (_a = /CN=([^\n,]+)/.exec(cert.subject)) == null ? void 0 : _a[1]) != null ? _b : "",
+      subject: (_c = (_b = /CN=([^\n,]+)/.exec(cert.subject)) == null ? void 0 : _b[1]) != null ? _c : "",
       validTo: cert.validTo
     };
   } catch {
