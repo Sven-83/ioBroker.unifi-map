@@ -127,6 +127,24 @@
             "md": 6,
             "lg": 4,
             "xl": 4
+        },
+        "_headerMap": {
+            "type": "header",
+            "text": "Map",
+            "size": 2,
+            "newLine": true
+        },
+        "segmentName": {
+            "type": "text",
+            "label": "Name of a section without UniFi",
+            "help": "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.",
+            "maxLength": 30,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
         }
     }
 }

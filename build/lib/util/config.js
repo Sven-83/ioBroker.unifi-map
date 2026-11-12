@@ -29,7 +29,8 @@ __export(config_exports, {
   clamp: () => clamp,
   consoleHost: () => consoleHost,
   consolePort: () => consolePort,
-  delayMs: () => delayMs
+  delayMs: () => delayMs,
+  segmentName: () => segmentName
 });
 module.exports = __toCommonJS(config_exports);
 var import_node_net = require("node:net");
@@ -64,6 +65,10 @@ function apiKey(value) {
   const key = typeof value === "string" ? value.trim() : "";
   return /^[\x21-\x7e]{8,256}$/.test(key) ? key : void 0;
 }
+function segmentName(value) {
+  const name = typeof value === "string" ? value.replace(new RegExp("\\p{Cc}", "gu"), "").trim() : "";
+  return name.slice(0, 30);
+}
 function delayMs(seconds, random = Math.random) {
   return seconds * 1e3 + Math.floor(random() * JITTER_MS);
 }
@@ -80,6 +85,7 @@ function delayMs(seconds, random = Math.random) {
   clamp,
   consoleHost,
   consolePort,
-  delayMs
+  delayMs,
+  segmentName
 });
 //# sourceMappingURL=config.js.map

@@ -16,5 +16,8 @@
     "Device list every": "Liste des appareils toutes les",
     "Seconds, 30 to 3600": "Secondes, de 30 à 3600",
     "Details, clients and uplinks every": "Détails, clients et liaisons montantes toutes les",
-    "Seconds, 60 to 3600; also at once when a device changes its state": "Secondes, de 60 à 3600 ; en plus immédiatement quand un appareil change d'état"
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Secondes, de 60 à 3600 ; en plus immédiatement quand un appareil change d'état",
+    "Map": "Carte",
+    "Name of a section without UniFi": "Nom d’une section sans UniFi",
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "p. ex. Powerline ou le nom d’un switch simple. La carte l’affiche à la place de « Pas UniFi »."
 }

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { apiKey, clamp, consoleHost, consolePort, delayMs, JITTER_MS } from './config';
+import { apiKey, clamp, consoleHost, consolePort, delayMs, JITTER_MS, segmentName } from './config';
 
 describe('util/config', () => {
     it('clamps numbers and falls back for nonsense', () => {
@@ -36,5 +36,13 @@ describe('util/config', () => {
     it('adds a jitter below JITTER_MS', () => {
         expect(delayMs(60, () => 0)).to.equal(60_000);
         expect(delayMs(60, () => 0.999)).to.be.below(60_000 + JITTER_MS);
+    });
+
+    it('cleans the name of a section without UniFi', () => {
+        expect(segmentName('  Powerline ')).to.equal('Powerline');
+        expect(segmentName('a\nb\tc')).to.equal('abc');
+        expect(segmentName('x'.repeat(40))).to.have.length(30);
+        expect(segmentName(undefined)).to.equal('');
+        expect(segmentName(42)).to.equal('');
     });
 });

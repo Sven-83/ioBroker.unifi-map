@@ -100,7 +100,8 @@
         "certificate": "",
         "certFingerprint": "",
         "pollInterval": 60,
-        "detailInterval": 300
+        "detailInterval": 300,
+        "segmentName": ""
     },
     "encryptedNative": ["apiKey"],
     "protectedNative": ["apiKey"],

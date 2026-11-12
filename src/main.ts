@@ -38,6 +38,7 @@ import {
     consoleHost,
     consolePort,
     delayMs,
+    segmentName,
 } from './lib/util/config';
 
 /** First retry after an error, doubled up to RETRY_MAX_S (audit B.11.4) */
@@ -293,6 +294,13 @@ class UnifiMap extends utils.Adapter {
             });
         });
         const topology = buildTopology(statuses, this.lastUplinks);
+        // the map shows the own name of a section that is not UniFi (e.g. "Powerline")
+        const sectionName = segmentName(this.config.segmentName);
+        for (const node of topology.nodes) {
+            if (node.virtual && !node.name) {
+                node.name = sectionName;
+            }
+        }
         const nodes = new Map(topology.nodes.map(n => [n.id, n]));
         for (const status of statuses) {
             const node = nodes.get(status.id)!;

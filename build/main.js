@@ -256,6 +256,12 @@ class UnifiMap extends utils.Adapter {
       });
     });
     const topology = (0, import_topology.buildTopology)(statuses, this.lastUplinks);
+    const sectionName = (0, import_config.segmentName)(this.config.segmentName);
+    for (const node of topology.nodes) {
+      if (node.virtual && !node.name) {
+        node.name = sectionName;
+      }
+    }
     const nodes = new Map(topology.nodes.map((n) => [n.id, n]));
     for (const status of statuses) {
       const node = nodes.get(status.id);

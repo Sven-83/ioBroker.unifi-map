@@ -16,5 +16,8 @@
     "Device list every": "Список пристроїв кожні",
     "Seconds, 30 to 3600": "Секунди, від 30 до 3600",
     "Details, clients and uplinks every": "Подробиці, клієнти та аплінки кожні",
-    "Seconds, 60 to 3600; also at once when a device changes its state": "Секунди, від 60 до 3600; додатково одразу, коли пристрій змінює стан"
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Секунди, від 60 до 3600; додатково одразу, коли пристрій змінює стан",
+    "Map": "Карта",
+    "Name of a section without UniFi": "Назва ділянки без UniFi",
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "наприклад, Powerline або назва простого комутатора. Карта показує її замість «Не UniFi»."
 }

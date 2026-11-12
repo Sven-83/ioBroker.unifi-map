@@ -31,6 +31,7 @@
             segment: 'Not UniFi',
             notUnifi: 'Not UniFi',
             notUnifiSub: 'e.g. powerline',
+            notUnifiNamedSub: 'not UniFi',
             notReachable: 'not reachable',
             failedSub: 'failed',
             updating: 'updating',
@@ -77,6 +78,7 @@
             segment: 'Nicht UniFi',
             notUnifi: 'Nicht UniFi',
             notUnifiSub: 'z. B. Powerline',
+            notUnifiNamedSub: 'kein UniFi-Gerät',
             notReachable: 'nicht erreichbar',
             failedSub: 'ausgefallen',
             updating: 'Update läuft',
@@ -164,7 +166,8 @@
 
     function nodeName(n) {
         if (n.virtual) {
-            return t.notUnifi;
+            // own name from the instance settings (e.g. "Powerline"), else a neutral one
+            return n.name || t.notUnifi;
         }
         // switch cards without "Switch" in the name, the second line says it
         return n.role === 'switch' ? String(n.name).replace(/^Switch\s+/i, '') || n.name : n.name;
@@ -239,7 +242,8 @@
             if (!a || !b || !child) {
                 continue;
             }
-            const viaSegment = child.virtual || (parent && parent.virtual);
+            // the cable into the section is a normal cable; only the way through it (e.g. powerline) is orange
+            const viaSegment = !!(parent && parent.virtual);
             let color = '#8c8a83';
             let dash = '';
             let cap = 'butt';
@@ -270,8 +274,8 @@
                 const warn = e.degraded && !['offline', 'consequence'].includes(child.state);
                 const w = text.length * 5.7 + 16;
                 const cy = y2 - 11;
-                const fg = warn ? '#f2c14e' : child.virtual ? '#e8913a' : '#a3a19a';
-                const bd = warn ? '#f2c14e' : child.virtual ? '#6b4a26' : '#3d3d42';
+                const fg = warn ? '#f2c14e' : '#a3a19a';
+                const bd = warn ? '#f2c14e' : '#3d3d42';
                 chips += `<rect x="${b.x - w / 2}" y="${cy - 9}" width="${w}" height="18" rx="9" fill="#2b2b2f" stroke="${bd}"/><text x="${b.x}" y="${cy + 4}" text-anchor="middle" font-size="11" fill="${fg}">${esc(text)}</text>`;
             }
         }
@@ -283,7 +287,13 @@
             const look = LOOK[n.virtual ? 'virtual' : n.state] || LOOK.ok;
             const x = p.x - S.width / 2;
             const y = p.y - S.height / 2;
-            let sub = n.virtual ? t.notUnifiSub : n.role === 'switch' ? 'Switch' : n.model;
+            let sub = n.virtual
+                ? n.name
+                    ? t.notUnifiNamedSub
+                    : t.notUnifiSub
+                : n.role === 'switch'
+                  ? 'Switch'
+                  : n.model;
             const e = (topo.edges || []).find(edge => edge.to === n.id);
             if (n.state === 'degraded' && e && e.type !== 'wireless') {
                 sub = linkText(e);
@@ -364,7 +374,7 @@
         } else if (n.state === 'consequence' && n.causeId && byId.get(n.causeId)) {
             hint = `<div class="hint bad">${esc(t.causeHint(nodeName(byId.get(n.causeId))))}</div>`;
         }
-        box.innerHTML = `<button class="close" aria-label="${esc(t.close)}">×</button><h2>${esc(n.virtual ? t.notUnifi : n.name)}</h2><div class="sub">${esc(n.virtual ? t.notUnifiSub : n.role === 'switch' ? 'Switch' : n.role === 'gateway' ? 'Gateway' : 'Access Point')}</div><dl>${rows.join('')}</dl>${hint}`;
+        box.innerHTML = `<button class="close" aria-label="${esc(t.close)}">×</button><h2>${esc(n.virtual ? nodeName(n) : n.name)}</h2><div class="sub">${esc(n.virtual ? (n.name ? t.notUnifiNamedSub : t.notUnifiSub) : n.role === 'switch' ? 'Switch' : n.role === 'gateway' ? 'Gateway' : 'Access Point')}</div><dl>${rows.join('')}</dl>${hint}`;
         box.classList.add('show');
     }
 
@@ -386,6 +396,7 @@
         renderTimer = null;
         const topo = topology();
         renderHeader(topo);
+        renderLegend(topo);
         renderMap(topo);
         renderDetail(topo);
         renderBanner();
@@ -397,13 +408,18 @@
         }
     }
 
-    function staticTexts() {
-        $('mapTitle').textContent = t.map;
-        $('mapHint').textContent = t.hint;
+    function renderLegend(topo) {
+        const named = topo && topo.nodes.find(n => n.virtual && n.name);
         $('legend').innerHTML =
             `<span><i style="border-top:2px solid #8c8a83"></i>${esc(t.cable)}</span>` +
             `<span><i style="border-top:2px dashed #4aa3ff"></i>${esc(t.mesh)}</span>` +
-            `<span><i style="border-top:2px dotted #e8913a"></i>${esc(t.segment)}</span>`;
+            `<span><i style="border-top:2px dotted #e8913a"></i>${esc(named ? named.name : t.segment)}</span>`;
+    }
+
+    function staticTexts() {
+        $('mapTitle').textContent = t.map;
+        $('mapHint').textContent = t.hint;
+        renderLegend(null);
     }
 
     async function load() {

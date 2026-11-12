@@ -16,5 +16,8 @@
     "Device list every": "Apparatenlijst elke",
     "Seconds, 30 to 3600": "Seconden, 30 tot 3600",
     "Details, clients and uplinks every": "Details, clients en uplinks elke",
-    "Seconds, 60 to 3600; also at once when a device changes its state": "Seconden, 60 tot 3600; daarnaast meteen wanneer een apparaat van status verandert"
+    "Seconds, 60 to 3600; also at once when a device changes its state": "Seconden, 60 tot 3600; daarnaast meteen wanneer een apparaat van status verandert",
+    "Map": "Kaart",
+    "Name of a section without UniFi": "Naam van een deel zonder UniFi",
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "bijv. Powerline of de naam van een eenvoudige switch. De kaart toont deze in plaats van “Geen UniFi”."
 }

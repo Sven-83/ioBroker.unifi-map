@@ -43,6 +43,7 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | Fetch certificate | Reads the self-signed certificate of the console and shows its SHA-256 fingerprint. Compare it with the fingerprint your browser shows for the console, then save. Only this certificate is accepted afterwards; the key is never sent over another connection |
 | Device list every | Seconds, 30 to 3600, default 60 |
 | Details, clients and uplinks every | Seconds, 60 to 3600, default 300; also at once when a device changes its state |
+| Name of a section without UniFi | e.g. `Powerline` or the name of a simple switch; the map shows it instead of "Not UniFi". The cable into the section is drawn as a normal cable, the way through it orange dotted |
 
 ### States
 | State | Meaning |

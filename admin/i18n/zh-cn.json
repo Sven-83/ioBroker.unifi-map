@@ -16,5 +16,8 @@
     "Device list every": "设备列表间隔",
     "Seconds, 30 to 3600": "秒，30 到 3600",
     "Details, clients and uplinks every": "详细信息、客户端和上行链路间隔",
-    "Seconds, 60 to 3600; also at once when a device changes its state": "秒，60 到 3600；设备状态变化时也会立即读取"
+    "Seconds, 60 to 3600; also at once when a device changes its state": "秒，60 到 3600；设备状态变化时也会立即读取",
+    "Map": "地图",
+    "Name of a section without UniFi": "非 UniFi 段的名称",
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "例如 Powerline 或简单交换机的名称。地图会显示它，而不是“非 UniFi”。"
 }

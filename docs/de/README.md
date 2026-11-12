@@ -39,6 +39,7 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | Zertifikat abrufen | Liest das selbstsignierte Zertifikat der Konsole und zeigt den SHA-256-Fingerabdruck. Mit dem Fingerabdruck vergleichen, den der Browser für die Konsole zeigt, dann speichern. Danach wird nur dieses Zertifikat akzeptiert; der Schlüssel geht nie über eine andere Verbindung |
 | Geräteliste alle | Sekunden, 30 bis 3600, Standard 60 |
 | Details, Clients und Uplinks alle | Sekunden, 60 bis 3600, Standard 300; zusätzlich sofort, wenn ein Gerät seinen Zustand ändert |
+| Name eines Abschnitts ohne UniFi | z. B. `Powerline` oder der Name eines einfachen Switches; die Karte zeigt ihn statt „Nicht UniFi“. Das Kabel in den Abschnitt ist ein normales Kabel, der Weg hindurch orange gepunktet |
 
 ## Datenpunkte
 | Datenpunkt | Bedeutung |

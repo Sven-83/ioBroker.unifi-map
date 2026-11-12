@@ -71,6 +71,17 @@ export function apiKey(value: unknown): string | undefined {
 }
 
 /**
+ * Name for a section that is not UniFi (simple switch, powerline): printable text, at most 30 characters.
+ *
+ * @param value - Value from the config
+ * @returns The name, empty if none is set
+ */
+export function segmentName(value: unknown): string {
+    const name = typeof value === 'string' ? value.replace(/\p{Cc}/gu, '').trim() : '';
+    return name.slice(0, 30);
+}
+
+/**
  * Delay until the next run: the interval plus a random jitter.
  *
  * @param seconds - Interval
