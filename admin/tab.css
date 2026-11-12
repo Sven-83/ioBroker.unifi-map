@@ -232,7 +232,16 @@ body.stale #map {
     color: var(--bad-fg);
     border: 1px solid var(--bad-bd);
 }
-/* movement only when something needs attention */
+/* moving dots on the links, as on the VIS page */
+@keyframes flow {
+    to {
+        stroke-dashoffset: -26;
+    }
+}
+.flow {
+    animation: flow 2.2s linear infinite;
+}
+/* blinking only when something needs attention */
 @keyframes pulse {
     0%,
     100% {
@@ -265,6 +274,10 @@ body.stale #map {
     .alarm,
     .upd {
         animation: none;
+    }
+    .flow {
+        animation: none;
+        opacity: 0;
     }
 }
 @media (max-width: 700px) {

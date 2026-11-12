@@ -111,6 +111,9 @@
     };
     let t = TEXT[(navigator.language || 'en').slice(0, 2)] || TEXT.en;
 
+    // lighter colour of the moving dots per link colour
+    /** @type {Record<string, string>} */
+    const DOT = { '#8c8a83': '#cfccc3', '#e8913a': '#f0a95c', '#4aa3ff': '#8cc4ff' };
     // line icons (24 grid, stroke 1.7)
     const ICON = {
         gateway:
@@ -232,7 +235,9 @@
         const { pos, width, height } = L.layout(topo);
         const byId = new Map(topo.nodes.map(n => [n.id, n]));
         let lines = '';
+        let dots = '';
         let chips = '';
+        let i = 0;
         let cards = '';
         for (const e of topo.edges || []) {
             const a = pos[e.from];
@@ -265,7 +270,14 @@
             const y1 = a.y + S.height / 2;
             const y2 = b.y - S.height / 2;
             const my = (y1 + y2) / 2;
-            lines += `<path d="M${a.x} ${y1} C${a.x} ${my + 6} ${b.x} ${my - 6} ${b.x} ${y2}" stroke="${color}" stroke-width="2.4" fill="none" stroke-dasharray="${dash}" stroke-linecap="${cap}"/>`;
+            const way = `M${a.x} ${y1} C${a.x} ${my + 6} ${b.x} ${my - 6} ${b.x} ${y2}`;
+            lines += `<path d="${way}" stroke="${color}" stroke-width="2.4" fill="none" stroke-dasharray="${dash}" stroke-linecap="${cap}"/>`;
+            // dots run from the console outwards on every working link, in the colour of the link (as on the VIS page)
+            if (child.state !== 'offline' && child.state !== 'consequence') {
+                const dotColor = DOT[color] || color;
+                dots += `<path class="flow" d="${way}" stroke="${dotColor}" stroke-width="4.2" fill="none" stroke-dasharray="0 26" stroke-linecap="round" opacity="0.85" style="animation-delay:${-(i % 5) * 0.4}s"/>`;
+            }
+            i++;
             let text = child.virtual ? '' : linkText(e);
             if (e.port != null) {
                 text = text ? `${t.port(e.port)} · ${text}` : t.port(e.port);
@@ -320,7 +332,7 @@
         }
         // room above the top card for the UPDATE label and the chips
         map.setAttribute('viewBox', `0 -10 ${width} ${height + 10}`);
-        map.innerHTML = lines + chips + cards;
+        map.innerHTML = lines + dots + chips + cards;
     }
 
     function clip(text, max) {
