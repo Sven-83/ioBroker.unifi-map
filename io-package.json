@@ -63,7 +63,24 @@
         "dataSource": "poll",
         "messagebox": true,
         "adminUI": {
-            "config": "json"
+            "config": "json",
+            "tab": "html"
+        },
+        "adminTab": {
+            "name": {
+                "en": "Network",
+                "de": "Netzwerk",
+                "ru": "Сеть",
+                "pt": "Rede",
+                "nl": "Netwerk",
+                "fr": "Réseau",
+                "it": "Rete",
+                "es": "Red",
+                "pl": "Sieć",
+                "uk": "Мережа",
+                "zh-cn": "网络"
+            },
+            "singleton": false
         },
         "dependencies": [
             {

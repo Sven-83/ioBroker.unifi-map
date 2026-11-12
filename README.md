@@ -8,17 +8,18 @@
 German documentation: [docs/de/README.md](docs/de/README.md)
 
 ioBroker adapter for UniFi networks: are all devices running, which uplink is slow, which device restarted.
-A topology map and firmware updates on request follow in later versions.
+Includes a topology map as admin tab. Firmware updates on request follow in a later version.
 
-> **Work in progress.** Version 0.1.0 reads status and topology (phases 2 and 3 of 6). Nothing is written to the console.
+> **Work in progress.** Version 0.1.0 reads status and topology and shows the map (phases 2 to 4 of 6). Nothing is written to the console.
 
 ### Features
 - Status of every UniFi device (console, switches, access points): online, firmware, uptime, clients
 - Uplink per device: cable or mesh, link speed, signal of mesh links
-- Yellow when a cable uplink runs below its maximum (e.g. 100 of 1000 Mbit/s); endpoints at switch ports do not count
+- Yellow when a cable uplink gets slower than usual (usual = fastest speed seen so far, kept in `info.linkSpeeds`); links that always ran slow stay green. The button `acceptLinkSpeeds` takes the current speeds as usual (e.g. after changing a cable)
 - Restart detection, also for restarts while the adapter was stopped; restarts within 7 days
 - Summary for a tile: `ok`, `degraded`, `offline`, `stale` (data too old - never green from old values)
 - Topology: who is connected to whom, cable or mesh, as JSON for the map
+- Admin tab **Network**: map of the network from the console downwards, live. Cable grey, mesh blue dashed, a section that is not UniFi (simple switch, powerline) orange dotted; port and speed at each link. Failed devices red, devices behind them grey dashed, updates marked. Tap a device for details (model, link, uptime, firmware, clients, IP)
 - A failure is reported only for its cause: devices cut off behind a failed device are marked as a consequence.
   Devices that find another way (a mesh access point moving to another parent) count as online and report `uplinkChanged`
 - Last event (offline, online, restart, uplinkChanged, degraded, recovered) as JSON for scripts
@@ -97,6 +98,8 @@ The icon is an own design. Use at your own risk.
 ### 0.1.0 (work in progress)
 - Status of the devices, uplinks (cable/mesh, speed), slow uplinks, restarts, summary and events
 - Topology with consequence failures and moving mesh access points
+- Yellow only when a link gets slower than usual
+- Admin tab with the topology map
 - Pinned certificate of the console, read-only API key
 
 ## License

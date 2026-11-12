@@ -3,17 +3,18 @@
 [English](../../README.md)
 
 ioBroker-Adapter für UniFi-Netzwerke: Laufen alle Geräte, welcher Uplink ist langsam, welches Gerät hat neu gestartet.
-Topologie-Karte und Firmware-Updates auf Knopfdruck folgen in späteren Versionen.
+Mit Topologie-Karte als Admin-Tab. Firmware-Updates auf Knopfdruck folgen in einer späteren Version.
 
-> **In Arbeit.** Version 0.1.0 liest Status und Topologie (Phase 2 und 3 von 6). An die Konsole wird nichts geschrieben.
+> **In Arbeit.** Version 0.1.0 liest Status und Topologie und zeigt die Karte (Phase 2 bis 4 von 6). An die Konsole wird nichts geschrieben.
 
 ## Funktionen
 - Status jedes UniFi-Geräts (Konsole, Switches, Access Points): online, Firmware, Laufzeit, Clients
 - Uplink je Gerät: Kabel oder Mesh, Link-Tempo, Signal bei Mesh
-- Gelb, wenn ein Kabel-Uplink unter seinem Maximum läuft (z. B. 100 von 1000 Mbit/s); Endgeräte an Switch-Ports zählen nicht
+- Gelb, wenn ein Kabel-Uplink langsamer als gewohnt wird (gewohnt = schnellstes bisher gesehenes Tempo, gespeichert in `info.linkSpeeds`); Links, die schon immer langsam liefen, bleiben grün. Der Knopf `acceptLinkSpeeds` übernimmt die aktuellen Tempos als gewohnt (z. B. nach einem Kabeltausch)
 - Neustart-Erkennung, auch für Neustarts, während der Adapter aus war; Neustarts der letzten 7 Tage
 - Zusammenfassung für eine Kachel: `ok`, `degraded`, `offline`, `stale` (Daten zu alt – nie Grün aus alten Werten)
 - Topologie: wer hängt an wem, Kabel oder Mesh, als JSON für die Karte
+- Admin-Tab **Netzwerk**: Karte des Netzes von der Konsole abwärts, live. Kabel grau, Mesh blau gestrichelt, ein Abschnitt ohne UniFi (einfacher Switch, Powerline) orange gepunktet; Port und Tempo an jeder Verbindung. Ausgefallene Geräte rot, Geräte dahinter grau gestrichelt, Updates markiert. Antippen zeigt Details (Modell, Verbindung, Laufzeit, Firmware, Clients, IP)
 - Ein Ausfall wird nur für die Ursache gemeldet: Geräte, die hinter einem ausgefallenen Gerät abgeschnitten sind,
   gelten als Folge. Geräte, die einen anderen Weg finden (ein Mesh-AP wechselt zu einem anderen Elterngerät), zählen als
   online und melden `uplinkChanged`
