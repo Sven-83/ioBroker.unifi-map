@@ -8,7 +8,7 @@
 German documentation: [docs/de/README.md](docs/de/README.md)
 
 ioBroker adapter for UniFi networks: are all devices running, which uplink is slow, which device restarted.
-Includes a topology map as admin tab. Firmware updates on request follow in a later version.
+Includes a topology map as admin tab. The adapter only reads: an available firmware update is shown, it is started in the UniFi app.
 
 > **Work in progress.** Version 0.1.0 reads status and topology and shows the map (phases 2 to 4 of 6). Nothing is written to the console.
 
