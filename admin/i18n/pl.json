@@ -9,7 +9,6 @@
     "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Utwórz go w UniFi w Ustawienia > Control Plane > Integracje, dla lokalnego użytkownika z rolą tylko do odczytu. Jest przechowywany w postaci zaszyfrowanej.",
     "Please enter the API key": "Wpisz klucz API",
     "Certificate": "Certyfikat",
-    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "Konsola używa certyfikatu z podpisem własnym. Pobierz go, porównaj odcisk z tym, który przeglądarka pokazuje dla konsoli, a potem zapisz. Później akceptowany jest tylko ten certyfikat.",
     "Fetch certificate": "Pobierz certyfikat",
     "Confirmed fingerprint (SHA-256)": "Potwierdzony odcisk (SHA-256)",
     "Polling": "Odpytywanie",
@@ -21,5 +20,6 @@
     "Name of a section without UniFi": "Nazwa odcinka bez UniFi",
     "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "np. Powerline lub nazwa prostego switcha. Mapa pokazuje ją zamiast „Nie UniFi”.",
     "Take over a renewed certificate automatically": "Automatycznie przejmij odnowiony certyfikat",
-    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "Konsola odnawia certyfikat krótko przed jego wygaśnięciem. Tylko wtedy i tylko dla tej samej nazwy nowy jest przejmowany i zgłaszany. Każdą inną zmianę trzeba potwierdzić tutaj."
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "Konsola odnawia certyfikat krótko przed jego wygaśnięciem. Tylko wtedy i tylko dla tej samej nazwy nowy jest przejmowany i zgłaszany. Każdą inną zmianę trzeba potwierdzić tutaj.",
+    "The console uses a self-signed certificate; only the confirmed one is accepted. To confirm a new one: 1. Click “Fetch certificate”. 2. Compare the fingerprint below with the one your browser shows for the console. 3. Save. “Save” only becomes active when the fingerprint below has changed.": "Konsola używa certyfikatu z podpisem własnym; akceptowany jest tylko potwierdzony. Aby potwierdzić nowy: 1. Kliknij „Pobierz certyfikat”. 2. Porównaj odcisk poniżej z tym, który przeglądarka pokazuje dla konsoli. 3. Zapisz. „Zapisz” staje się aktywne dopiero, gdy odcisk poniżej się zmienił."
 }

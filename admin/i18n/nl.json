@@ -9,7 +9,6 @@
     "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Maak deze in UniFi aan onder Instellingen > Control Plane > Integraties, voor een lokale gebruiker met een alleen-lezen rol. Hij wordt versleuteld opgeslagen.",
     "Please enter the API key": "Voer de API-sleutel in",
     "Certificate": "Certificaat",
-    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "De console gebruikt een zelfondertekend certificaat. Haal het op, vergelijk de vingerafdruk met die van uw browser voor de console en sla op. Daarna wordt alleen dit certificaat geaccepteerd.",
     "Fetch certificate": "Certificaat ophalen",
     "Confirmed fingerprint (SHA-256)": "Bevestigde vingerafdruk (SHA-256)",
     "Polling": "Opvragen",
@@ -21,5 +20,6 @@
     "Name of a section without UniFi": "Naam van een deel zonder UniFi",
     "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "bijv. Powerline of de naam van een eenvoudige switch. De kaart toont deze in plaats van “Geen UniFi”.",
     "Take over a renewed certificate automatically": "Vernieuwd certificaat automatisch overnemen",
-    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "De console vernieuwt haar certificaat kort voor het verloopt. Alleen dan, en alleen voor dezelfde naam, wordt het nieuwe overgenomen en gemeld. Elke andere wijziging moet hier worden bevestigd."
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "De console vernieuwt haar certificaat kort voor het verloopt. Alleen dan, en alleen voor dezelfde naam, wordt het nieuwe overgenomen en gemeld. Elke andere wijziging moet hier worden bevestigd.",
+    "The console uses a self-signed certificate; only the confirmed one is accepted. To confirm a new one: 1. Click “Fetch certificate”. 2. Compare the fingerprint below with the one your browser shows for the console. 3. Save. “Save” only becomes active when the fingerprint below has changed.": "De console gebruikt een zelfondertekend certificaat; alleen het bevestigde wordt geaccepteerd. Een nieuw bevestigen: 1. Klik op „Certificaat ophalen”. 2. Vergelijk de vingerafdruk hieronder met die uw browser voor de console toont. 3. Opslaan. „Opslaan” wordt pas actief als de vingerafdruk hieronder is veranderd."
 }

@@ -54,7 +54,7 @@
         },
         "_certificateHelp": {
             "type": "staticText",
-            "text": "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.",
+            "text": "The console uses a self-signed certificate; only the confirmed one is accepted. To confirm a new one: 1. Click “Fetch certificate”. 2. Compare the fingerprint below with the one your browser shows for the console. 3. Save. “Save” only becomes active when the fingerprint below has changed.",
             "newLine": true,
             "xs": 12,
             "sm": 12,

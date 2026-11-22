@@ -40,7 +40,7 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 |---|---|
 | Address of the console / port | IP address or host name of the console, port 443 |
 | API key | Created in UniFi under Settings > Control Plane > Integrations for a local user with a read-only role; stored encrypted |
-| Fetch certificate | Reads the self-signed certificate of the console and shows its SHA-256 fingerprint. Compare it with the fingerprint your browser shows for the console, then save. Only this certificate is accepted afterwards; the key is never sent over another connection |
+| Fetch certificate | Reads the self-signed certificate of the console and shows its SHA-256 fingerprint. Compare it with the fingerprint your browser shows for the console, then save (“Save” only becomes active when the fingerprint changed). Only this certificate is accepted afterwards; the key is never sent over another connection |
 | Take over a renewed certificate automatically | Default on. UniFi OS renews its self-signed certificate (with a new key) a few days before it runs out, without restart or firmware update. The new certificate is only taken over when the confirmed one runs out within 14 days (or ran out), the new one is self-signed, issued for the same name, valid now and newer. The instance then restarts with it. Any other change must be confirmed again |
 | Device list every | Seconds, 30 to 3600, default 60 |
 | Details, clients and uplinks every | Seconds, 60 to 3600, default 300; also at once when a device changes its state |

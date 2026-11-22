@@ -9,7 +9,6 @@
     "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "Створіть його в UniFi у розділі «Налаштування > Control Plane > Інтеграції» для локального користувача з роллю лише для читання. Він зберігається в зашифрованому вигляді.",
     "Please enter the API key": "Введіть API-ключ",
     "Certificate": "Сертифікат",
-    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "Консоль використовує самопідписаний сертифікат. Отримайте його, порівняйте відбиток із тим, що показує браузер для консолі, і збережіть. Після цього приймається лише цей сертифікат.",
     "Fetch certificate": "Отримати сертифікат",
     "Confirmed fingerprint (SHA-256)": "Підтверджений відбиток (SHA-256)",
     "Polling": "Опитування",
@@ -21,5 +20,6 @@
     "Name of a section without UniFi": "Назва ділянки без UniFi",
     "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "наприклад, Powerline або назва простого комутатора. Карта показує її замість «Не UniFi».",
     "Take over a renewed certificate automatically": "Автоматично приймати оновлений сертифікат",
-    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "Консоль оновлює сертифікат незадовго до закінчення строку. Лише тоді й лише для того самого імені новий приймається й повідомляється. Будь-яку іншу зміну треба підтвердити тут."
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "Консоль оновлює сертифікат незадовго до закінчення строку. Лише тоді й лише для того самого імені новий приймається й повідомляється. Будь-яку іншу зміну треба підтвердити тут.",
+    "The console uses a self-signed certificate; only the confirmed one is accepted. To confirm a new one: 1. Click “Fetch certificate”. 2. Compare the fingerprint below with the one your browser shows for the console. 3. Save. “Save” only becomes active when the fingerprint below has changed.": "Консоль використовує самопідписаний сертифікат; приймається лише підтверджений. Щоб підтвердити новий: 1. Натисніть «Отримати сертифікат». 2. Порівняйте відбиток нижче з тим, що браузер показує для консолі. 3. Збережіть. «Зберегти» стає активною, лише коли відбиток нижче змінився."
 }

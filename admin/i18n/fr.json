@@ -9,7 +9,6 @@
     "Create it in UniFi under Settings > Control Plane > Integrations, for a local user with a read-only role. It is stored encrypted.": "À créer dans UniFi sous Paramètres > Control Plane > Intégrations, pour un utilisateur local avec un rôle en lecture seule. Elle est stockée chiffrée.",
     "Please enter the API key": "Veuillez saisir la clé d'API",
     "Certificate": "Certificat",
-    "The console uses a self-signed certificate. Fetch it, compare the fingerprint with the one your browser shows for the console, then save. Only this certificate is accepted afterwards.": "La console utilise un certificat auto-signé. Récupérez-le, comparez l'empreinte avec celle que votre navigateur affiche pour la console, puis enregistrez. Ensuite, seul ce certificat est accepté.",
     "Fetch certificate": "Récupérer le certificat",
     "Confirmed fingerprint (SHA-256)": "Empreinte confirmée (SHA-256)",
     "Polling": "Interrogation",
@@ -21,5 +20,6 @@
     "Name of a section without UniFi": "Nom d’une section sans UniFi",
     "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "p. ex. Powerline ou le nom d’un switch simple. La carte l’affiche à la place de « Pas UniFi ».",
     "Take over a renewed certificate automatically": "Accepter automatiquement un certificat renouvelé",
-    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "La console renouvelle son certificat peu avant son expiration. Seulement dans ce cas, et pour le même nom, le nouveau est accepté et signalé. Tout autre changement doit être confirmé ici."
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "La console renouvelle son certificat peu avant son expiration. Seulement dans ce cas, et pour le même nom, le nouveau est accepté et signalé. Tout autre changement doit être confirmé ici.",
+    "The console uses a self-signed certificate; only the confirmed one is accepted. To confirm a new one: 1. Click “Fetch certificate”. 2. Compare the fingerprint below with the one your browser shows for the console. 3. Save. “Save” only becomes active when the fingerprint below has changed.": "La console utilise un certificat auto-signé ; seul le certificat confirmé est accepté. Pour en confirmer un nouveau : 1. Cliquez sur «Récupérer le certificat». 2. Comparez l’empreinte ci-dessous avec celle que votre navigateur affiche pour la console. 3. Enregistrez. « Enregistrer » ne devient actif que si l’empreinte ci-dessous a changé."
 }
