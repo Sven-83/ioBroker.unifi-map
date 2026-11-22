@@ -41,6 +41,7 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | Address of the console / port | IP address or host name of the console, port 443 |
 | API key | Created in UniFi under Settings > Control Plane > Integrations for a local user with a read-only role; stored encrypted |
 | Fetch certificate | Reads the self-signed certificate of the console and shows its SHA-256 fingerprint. Compare it with the fingerprint your browser shows for the console, then save. Only this certificate is accepted afterwards; the key is never sent over another connection |
+| Take over a renewed certificate automatically | Default on. UniFi OS renews its self-signed certificate (with a new key) a few days before it runs out, without restart or firmware update. The new certificate is only taken over when the confirmed one runs out within 14 days (or ran out), the new one is self-signed, issued for the same name, valid now and newer. The instance then restarts with it. Any other change must be confirmed again |
 | Device list every | Seconds, 30 to 3600, default 60 |
 | Details, clients and uplinks every | Seconds, 60 to 3600, default 300; also at once when a device changes its state |
 | Name of a section without UniFi | e.g. `Powerline` or the name of a simple switch; the map shows it instead of "Not UniFi". The cable into the section is drawn as a normal cable, the way through it orange dotted |
@@ -62,6 +63,9 @@ iob url https://github.com/Sven-83/ioBroker.unifi-map
 | `devices.<id>.consequence` / `causeId` | Unreachable only because the device `causeId` before it failed |
 | `topology.json` | `rootId`, `nodes` (state `ok`, `degraded`, `offline`, `consequence`, `busy`; parent; depth) and `edges` (cable/mesh, speed, signal) |
 | `events.last` | Last event as JSON: `time`, `event`, `id`, `name`, `model`; `offline` also has `affected` (devices cut off behind it), `uplinkChanged` has `from` and `to` |
+| `info.certificateFingerprint` / `info.certificateValidTo` | Fingerprint and end of validity of the confirmed certificate |
+| `info.certificateChanged` / `info.certificateNewFingerprint` | The console presents another certificate, and its fingerprint; cleared after the next successful poll |
+| `info.certificateEvent` | Last certificate event as JSON, written once per new certificate: `event` (`renewed` = taken over, `changed` = confirm it), `time`, `oldFingerprint`, `newFingerprint`, `oldValidTo`, `newValidTo`, `reason` |
 | `refresh` | Button: read everything now (at most every 10 s) |
 
 `<id>` is the ID of the UniFi API, not the name or MAC address. Updates and starts (`UPDATING`, `GETTING_READY`)
@@ -71,8 +75,34 @@ do not count as failures.
 - Read only: the adapter sends GET requests only.
 - The API key is stored encrypted and only sent to the confirmed certificate. Use a key of a read-only user and give
   it an expiry date.
+- A renewed certificate is only taken over within the last 14 days of the confirmed one. Someone who pretends to
+  be the console in your network exactly then would receive the read-only key; switch the option off to confirm
+  every change yourself.
 - Device names and MAC addresses are written to the log on level debug only.
 - Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+
+### Notification script (example)
+The adapter does not create scripts. To get a message when the certificate changes, add a script like this to the
+JavaScript adapter (here with Telegram):
+
+```js
+on({ id: 'unifi-map.0.info.certificateEvent', change: 'ne', ack: true }, obj => {
+    let e;
+    try {
+        e = JSON.parse(obj.state.val);
+    } catch {
+        return;
+    }
+    const short = fp => (fp ? `${fp.split(':').slice(0, 8).join(':')}…` : '-');
+    const text =
+        e.event === 'renewed'
+            ? 'UniFi: the console renewed its certificate, taken over automatically.'
+            : `UniFi: the console presents another certificate - check it and confirm it in the instance settings. ${e.reason || ''}`;
+    sendTo('telegram', 'send', { text: `${text}
+old ${short(e.oldFingerprint)}
+new ${short(e.newFingerprint)}` });
+});
+```
 
 ### Known limitations
 - Cable/mesh and the link speed of the uplink are not part of the official Integration API. They come from the
@@ -102,6 +132,7 @@ The icon is an own design. Use at your own risk.
 - Yellow only when a link gets slower than usual
 - Admin tab with the topology map
 - Pinned certificate of the console, read-only API key
+- Changed certificate shown in states, admin tab and as an event; renewal shortly before the end taken over automatically (option)
 
 ## License
 MIT License

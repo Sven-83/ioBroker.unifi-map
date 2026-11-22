@@ -74,6 +74,12 @@ class UnifiMap extends utils.Adapter {
   previousNodes = /* @__PURE__ */ new Map();
   lastUplinks = /* @__PURE__ */ new Map();
   classicFailing = false;
+  consoleAddress = "";
+  consolePortNo = 443;
+  /** Certificate confirmed in the settings */
+  confirmed;
+  /** The confirmed certificate worked since the start */
+  certificateOk = false;
   constructor(options = {}) {
     super({ ...options, name: "unifi-map" });
     this.on("ready", this.onReady.bind(this));
@@ -104,9 +110,20 @@ class UnifiMap extends utils.Adapter {
       this.log.warn(`Not configured: ${problems}. Fill in the instance settings and save.`);
       return;
     }
+    this.consoleAddress = host;
+    this.consolePortNo = (0, import_config.consolePort)(this.config.port);
+    this.confirmed = certificate;
+    await this.setState("info.certificateFingerprint", certificate.fingerprint, true);
+    await this.setState("info.certificateValidTo", certificate.validToMs || 0, true);
+    if (certificate.validToMs - Date.now() <= import_certificate.RENEWAL_WINDOW_MS) {
+      const until = new Date(certificate.validToMs).toLocaleDateString();
+      this.log[this.config.certAutoRenew === false ? "warn" : "info"](
+        this.config.certAutoRenew === false ? `The confirmed certificate runs out on ${until}. The console renews it shortly before - confirm the new one then in the instance settings.` : `The confirmed certificate runs out on ${until}. The renewed one of the console will be taken over automatically.`
+      );
+    }
     const http = new import_http.UnifiHttp({
       host,
-      port: (0, import_config.consolePort)(this.config.port),
+      port: this.consolePortNo,
       apiKey: key,
       certificatePem: certificate.pem,
       fingerprint: certificate.fingerprint,
@@ -182,6 +199,11 @@ class UnifiMap extends utils.Adapter {
         this.log.info("Console reachable again");
       }
       await this.setState("info.connection", true, true);
+      if (!this.certificateOk) {
+        this.certificateOk = true;
+        await this.setState("info.certificateChanged", false, true);
+        await this.setState("info.certificateNewFingerprint", "", true);
+      }
       this.schedule((0, import_config.delayMs)(this.pollSeconds), () => this.poll());
     } catch (err) {
       await this.handleFailure(err);
@@ -354,6 +376,9 @@ class UnifiMap extends utils.Adapter {
     await this.setState("info.connection", false, true);
     const lasting = err instanceof import_errors.KeyRejectedError || err instanceof import_errors.CertificateChangedError || err instanceof import_errors.RateLimitedError;
     await this.markStale(lasting);
+    if (err instanceof import_errors.CertificateChangedError && await this.onCertificateChanged()) {
+      return;
+    }
     let waitS;
     if (err instanceof import_errors.KeyRejectedError || err instanceof import_errors.CertificateChangedError) {
       this.log.error(`${err.message}. Next attempt in ${RETRY_MAX_S / 60} min.`);
@@ -374,6 +399,66 @@ class UnifiMap extends utils.Adapter {
     this.failing = true;
     this.site = void 0;
     this.schedule(waitS * 1e3, () => this.poll(true));
+  }
+  /**
+   * The console presents another certificate. It is fetched (only the TLS handshake, the key is not sent) and
+   * shown in states. The usual renewal shortly before the end is taken over when the option is on; any other
+   * change waits for the user. An event for a notification script is written once per new certificate.
+   *
+   * @returns True when the renewal was taken over and the instance restarts
+   */
+  async onCertificateChanged() {
+    var _a;
+    const confirmed = this.confirmed;
+    if (!confirmed || !this.consoleAddress) {
+      return false;
+    }
+    let next;
+    try {
+      next = await (0, import_certificate.fetchCertificate)(this.consoleAddress, this.consolePortNo);
+    } catch (err) {
+      this.log.debug(`Changed certificate not fetched: ${(0, import_errors.describeError)(err)}`);
+      return false;
+    }
+    if (next.fingerprint === confirmed.fingerprint || this.abort.signal.aborted) {
+      return false;
+    }
+    this.certificateOk = false;
+    const now = Date.now();
+    const problem = (0, import_certificate.renewalProblem)(confirmed.pem, next.pem, now);
+    const reported = (_a = await this.getStateAsync("info.certificateNewFingerprint")) == null ? void 0 : _a.val;
+    await this.setState("info.certificateChanged", true, true);
+    await this.setState("info.certificateNewFingerprint", next.fingerprint, true);
+    const event = {
+      time: now,
+      oldFingerprint: confirmed.fingerprint,
+      newFingerprint: next.fingerprint,
+      oldValidTo: confirmed.validToMs,
+      newValidTo: next.validToMs
+    };
+    if (this.config.certAutoRenew !== false && !problem) {
+      try {
+        await this.setState("info.certificateEvent", JSON.stringify({ event: "renewed", ...event }), true);
+        this.log.info(
+          `The console renewed its certificate (new fingerprint ${next.fingerprint}, valid until ${next.validTo}). Taken over automatically, the instance restarts.`
+        );
+        await this.extendForeignObject(`system.adapter.${this.namespace}`, {
+          native: { certificate: next.pem, certFingerprint: next.fingerprint }
+        });
+        return true;
+      } catch (err) {
+        this.log.error(`Renewed certificate not taken over: ${(0, import_errors.describeError)(err)}`);
+        return false;
+      }
+    }
+    if (reported !== next.fingerprint) {
+      const reason = this.config.certAutoRenew === false ? "automatic take-over is off" : problem;
+      await this.setState("info.certificateEvent", JSON.stringify({ event: "changed", reason, ...event }), true);
+      this.log.warn(
+        `The console presents a new certificate (fingerprint ${next.fingerprint}), not taken over: ${reason}`
+      );
+    }
+    return false;
   }
   /**
    * The tile never shows green from old values.

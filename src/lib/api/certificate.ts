@@ -18,7 +18,14 @@ export interface ConsoleCertificate {
     subject: string;
     /** Valid until (text of the certificate) */
     validTo: string;
+    /** Valid until, ms since 1970 */
+    validToMs: number;
 }
+
+/** A renewal is only accepted when the confirmed certificate runs out within this time */
+export const RENEWAL_WINDOW_MS = 14 * 86_400_000;
+/** Clocks of the console and of ioBroker may differ a little */
+const CLOCK_SKEW_MS = 10 * 60_000;
 
 /**
  * Builds a PEM from the DER bytes of a certificate.
@@ -52,6 +59,7 @@ export function parseCertificate(text: unknown): ConsoleCertificate | undefined 
             fingerprint: cert.fingerprint256,
             subject: /CN=([^\n,]+)/.exec(cert.subject)?.[1] ?? '',
             validTo: cert.validTo,
+            validToMs: Date.parse(cert.validTo),
         };
     } catch {
         return undefined;
@@ -84,4 +92,50 @@ export function fetchCertificate(host: string, port: number, timeoutMs = 10_000)
         socket.setTimeout(timeoutMs, () => socket.destroy(new Error('no answer from the console')));
         socket.on('error', reject);
     });
+}
+
+/**
+ * Decides whether a new certificate of the console is the usual renewal of the confirmed one. UniFi OS issues a
+ * new self-signed certificate with a new key a few days before the old one runs out, without restart or
+ * firmware update. Such a renewal may be taken over without the user (option, audit B.10.4); everything else
+ * must be confirmed again. The decision only uses the two certificates, never data the unchecked server sends.
+ *
+ * @param confirmed - PEM of the confirmed certificate
+ * @param next - PEM of the certificate the console presents now
+ * @param now - Current time, ms
+ * @param windowMs - The confirmed certificate must run out within this time
+ * @returns Empty when it is a renewal, otherwise the reason why not
+ */
+export function renewalProblem(confirmed: string, next: string, now: number, windowMs = RENEWAL_WINDOW_MS): string {
+    let old: X509Certificate;
+    let fresh: X509Certificate;
+    try {
+        old = new X509Certificate(confirmed);
+        fresh = new X509Certificate(next);
+    } catch {
+        return 'certificate cannot be read';
+    }
+    if (old.fingerprint256 === fresh.fingerprint256) {
+        return 'same certificate';
+    }
+    const oldTo = Date.parse(old.validTo);
+    const oldFrom = Date.parse(old.validFrom);
+    const newFrom = Date.parse(fresh.validFrom);
+    const newTo = Date.parse(fresh.validTo);
+    if (!(oldTo - now <= windowMs)) {
+        return 'the confirmed certificate does not run out soon';
+    }
+    if (fresh.subject !== old.subject || (fresh.subjectAltName ?? '') !== (old.subjectAltName ?? '')) {
+        return 'the new certificate is issued for another name';
+    }
+    if (fresh.issuer !== fresh.subject || !fresh.verify(fresh.publicKey)) {
+        return 'the new certificate is not self-signed';
+    }
+    if (!(newFrom > oldFrom)) {
+        return 'the new certificate is not newer';
+    }
+    if (!(newFrom - CLOCK_SKEW_MS <= now && now < newTo)) {
+        return 'the new certificate is not valid now';
+    }
+    return '';
 }

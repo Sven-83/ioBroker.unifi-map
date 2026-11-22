@@ -39,6 +39,10 @@
             instead: (a, b) => `${a} instead of ${b}`,
             disconnected: 'No connection to ioBroker',
             noConsole: 'No connection to the console',
+            certChanged: 'The console presents another certificate. Check it and confirm it in the instance settings.',
+            certOld: 'confirmed',
+            certNew: 'now',
+            certLink: 'Open instance settings',
             staleBanner: 'The data is too old. Is the instance running?',
             model: 'Model',
             state: 'State',
@@ -86,6 +90,11 @@
             instead: (a, b) => `${a} statt ${b}`,
             disconnected: 'Keine Verbindung zu ioBroker',
             noConsole: 'Keine Verbindung zur Konsole',
+            certChanged:
+                'Die Konsole zeigt ein anderes Zertifikat. Bitte prüfen und in den Instanz-Einstellungen bestätigen.',
+            certOld: 'bestätigt',
+            certNew: 'jetzt',
+            certLink: 'Instanz-Einstellungen öffnen',
             staleBanner: 'Die Daten sind zu alt. Läuft die Instanz?',
             model: 'Modell',
             state: 'Zustand',
@@ -393,6 +402,18 @@
     function renderBanner() {
         const banner = $('banner');
         let text = '';
+        banner.classList.remove('cert');
+        if (socket && socket.connected && val('info.certificateChanged') === true) {
+            // short fingerprints are enough to compare with the browser
+            const short = fp => (typeof fp === 'string' && fp ? `${fp.slice(0, 23)}…` : '–');
+            const instance = `system.adapter.${prefix.slice(0, -1)}`;
+            banner.innerHTML =
+                `<div>${esc(t.certChanged)}</div>` +
+                `<div class="fp">${esc(t.certOld)}: ${esc(short(val('info.certificateFingerprint')))}<br>${esc(t.certNew)}: ${esc(short(val('info.certificateNewFingerprint')))}</div>` +
+                `<a href="../../#tab-instances/config/${esc(instance)}" target="_top">${esc(t.certLink)}</a>`;
+            banner.classList.add('show', 'cert');
+            return;
+        }
         if (!socket || !socket.connected) {
             text = t.disconnected;
         } else if (val('summary.state') === 'stale') {

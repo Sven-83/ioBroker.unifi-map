@@ -19,5 +19,7 @@
     "Seconds, 60 to 3600; also at once when a device changes its state": "Secondi, da 60 a 3600; inoltre subito quando un dispositivo cambia stato",
     "Map": "Mappa",
     "Name of a section without UniFi": "Nome di un tratto senza UniFi",
-    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "ad es. Powerline o il nome di uno switch semplice. La mappa lo mostra al posto di “Non UniFi”."
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "ad es. Powerline o il nome di uno switch semplice. La mappa lo mostra al posto di “Non UniFi”.",
+    "Take over a renewed certificate automatically": "Accettare automaticamente un certificato rinnovato",
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "La console rinnova il certificato poco prima della scadenza. Solo allora, e solo per lo stesso nome, il nuovo viene accettato e segnalato. Ogni altra modifica va confermata qui."
 }

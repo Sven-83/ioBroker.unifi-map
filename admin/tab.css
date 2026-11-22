@@ -160,6 +160,22 @@ body {
 .banner.show {
     display: block;
 }
+/* changed certificate: a task for the user, not a failure of the network */
+.banner.cert {
+    background: #2f2712;
+    border-color: #6b5a22;
+    color: var(--warn);
+}
+.banner.cert .fp {
+    margin: 4px 0;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    opacity: 0.9;
+}
+.banner.cert a {
+    color: var(--warn);
+    font-weight: 600;
+}
 body.stale #map {
     filter: grayscale(1);
     opacity: 0.55;

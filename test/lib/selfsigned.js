@@ -42,13 +42,16 @@ function utcTime(date) {
 }
 
 /**
- * @param {string} commonName - Subject and issuer
+ * @param {string} commonName - Subject (and issuer, unless options.issuer is given)
+ * @param {{ notBefore?: number, notAfter?: number, issuer?: string }} [options] - Validity (ms) and another issuer name
  * @returns {{ key: string, cert: string }} PEM of key and certificate
  */
-function selfSigned(commonName = 'unifi.test') {
+function selfSigned(commonName = 'unifi.test', options = {}) {
     const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
     const ecdsaSha256 = seq(oid('1.2.840.10045.4.3.2'));
-    const name = seq(set(seq(oid('2.5.4.3'), tlv(0x0c, Buffer.from(commonName)))));
+    const nameOf = cn => seq(set(seq(oid('2.5.4.3'), tlv(0x0c, Buffer.from(cn)))));
+    const name = nameOf(commonName);
+    const issuer = options.issuer ? nameOf(options.issuer) : name;
     const serial = randomBytes(8);
     // positive and without a leading zero byte: DER forbids that padding, OpenSSL then rejects the certificate
     serial[0] = (serial[0] & 0x3f) | 0x40;
@@ -57,8 +60,11 @@ function selfSigned(commonName = 'unifi.test') {
         tlv(0xa0, tlv(0x02, Buffer.from([2]))), // version 3
         tlv(0x02, serial),
         ecdsaSha256,
-        name,
-        seq(utcTime(new Date(now - 86_400_000)), utcTime(new Date(now + 365 * 86_400_000))),
+        issuer,
+        seq(
+            utcTime(new Date(options.notBefore ?? now - 86_400_000)),
+            utcTime(new Date(options.notAfter ?? now + 365 * 86_400_000)),
+        ),
         name,
         publicKey.export({ type: 'spki', format: 'der' }),
         // extensions: basicConstraints CA:TRUE, so OpenSSL accepts it as its own trust anchor

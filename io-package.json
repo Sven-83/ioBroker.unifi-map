@@ -99,6 +99,7 @@
         "apiKey": "",
         "certificate": "",
         "certFingerprint": "",
+        "certAutoRenew": true,
         "pollInterval": 60,
         "detailInterval": 300,
         "segmentName": ""
@@ -188,6 +189,71 @@
                 "read": true,
                 "write": false,
                 "def": "{}"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certificateFingerprint",
+            "type": "state",
+            "common": {
+                "role": "text",
+                "name": "Fingerprint (SHA-256) of the confirmed certificate",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certificateValidTo",
+            "type": "state",
+            "common": {
+                "role": "value.time",
+                "name": "End of validity of the confirmed certificate",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": 0
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certificateChanged",
+            "type": "state",
+            "common": {
+                "role": "indicator.alarm",
+                "name": "The console presents another certificate - confirm it in the settings",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certificateNewFingerprint",
+            "type": "state",
+            "common": {
+                "role": "text",
+                "name": "Fingerprint (SHA-256) of the certificate the console presents now, if it changed",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certificateEvent",
+            "type": "state",
+            "common": {
+                "role": "json",
+                "name": "Last certificate event (changed or renewed), for a notification script",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": ""
             },
             "native": {}
         },

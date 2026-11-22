@@ -19,5 +19,7 @@
     "Seconds, 60 to 3600; also at once when a device changes its state": "Секунды, от 60 до 3600; дополнительно сразу, когда устройство меняет состояние",
     "Map": "Карта",
     "Name of a section without UniFi": "Название участка без UniFi",
-    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "например, Powerline или имя простого коммутатора. Карта показывает его вместо «Не UniFi»."
+    "e.g. Powerline or the name of a simple switch. The map shows it instead of “Not UniFi”.": "например, Powerline или имя простого коммутатора. Карта показывает его вместо «Не UniFi».",
+    "Take over a renewed certificate automatically": "Автоматически принимать обновлённый сертификат",
+    "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.": "Консоль обновляет сертификат незадолго до истечения срока. Только в этом случае и только для того же имени новый принимается и сообщается. Любое другое изменение нужно подтвердить здесь."
 }

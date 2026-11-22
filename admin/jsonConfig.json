@@ -87,6 +87,17 @@
             "lg": 8,
             "xl": 8
         },
+        "certAutoRenew": {
+            "type": "checkbox",
+            "label": "Take over a renewed certificate automatically",
+            "help": "The console renews its certificate shortly before it runs out. Only then, and only for the same name, the new one is taken over and reported. Any other change must be confirmed here.",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 8,
+            "xl": 8
+        },
         "certificate": {
             "type": "text",
             "label": "Certificate",
