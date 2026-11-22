@@ -76,6 +76,9 @@ function configOf(fake) {
 }
 
 tests.integration(path.join(__dirname, '..'), {
+    // the default 'dev' is a js-controller alpha (8.0 on 22.11.2026) where restarting in a test hangs;
+    // test against the released version the adapter runs on
+    controllerVersion: 'latest',
     defineAdditionalTests({ suite }) {
         const stateVal = async (harness, id) => (await harness.states.getState(`${NS}.${id}`))?.val;
 
